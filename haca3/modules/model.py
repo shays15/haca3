@@ -223,6 +223,8 @@ class HACA3:
             Optimal logit after fusion.
         * beta_fusion: torch.Tensor (batch_size, self.beta_dim, image_dim, image_dim)
             Optimal beta after fusion. beta_fusion = reparameterize_logit(logit_fusion).
+        * attention_map: torch.Tensor (batch_size, num_contrasts)
+            Learned attention map of each source image contrast.
         """
         num_contrasts = len(logits)
         batch_size = logits[0].shape[0]
@@ -241,12 +243,12 @@ class HACA3:
 
         if contrast_dropout:
             available_contrast_id = dropout_contrasts(available_contrast_id, contrast_id_to_drop)
-        logit_fusion, attention = self.attention_module(q, k, v, modality_dropout=1 - available_contrast_id,
+        logit_fusion, attention, attention_map = self.attention_module(q, k, v, modality_dropout=1 - available_contrast_id,
                                                         temperature=10.0)
         beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
         combined_map = torch.cat([beta_fusion, target_theta.repeat(1, 1, image_dim, image_dim)], dim=1)
         rec_image = self.decoder(combined_map) * mask
-        return rec_image, attention, logit_fusion, beta_fusion
+        return rec_image, attention, logit_fusion, beta_fusion, attention_map
 
     def calculate_features_for_contrastive_loss(self, betas, source_images, available_contrast_id):
         """
@@ -412,7 +414,7 @@ class HACA3:
             contrast_id_to_drop = contrast_id_for_decoding
         else:
             contrast_id_to_drop = None
-        rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
+        rec_image, attention, logit_fusion, beta_fusion, attention_map = self.decode(logits, theta_target, query, keys,
                                                                       available_contrast_id,
                                                                       mask,
                                                                       contrast_dropout=contrast_dropout,
@@ -438,7 +440,7 @@ class HACA3:
             eta_target = self.calculate_eta(target_image_shuffled)
             query = torch.cat([theta_target, eta_target], dim=1)
             keys = [torch.cat([theta, eta], dim=1) for (theta, eta) in zip(thetas_source, etas_source)]
-            rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
+            rec_image, attention, logit_fusion, beta_fusion, attention_map = self.decode(logits, theta_target, query, keys,
                                                                           available_contrast_id, mask,
                                                                           contrast_dropout=True)
             theta_recon, _ = self.theta_encoder(rec_image)
@@ -617,7 +619,7 @@ class HACA3:
             for tid, (theta_target, query, norm_val) in enumerate(zip(thetas_target, queries, norm_vals)):
                 if out_paths is not None:
                     out_prefix = out_paths[tid].name.replace('.nii.gz', '')
-                rec_image, beta_fusion, logit_fusion, attention = [], [], [], []
+                rec_image, beta_fusion, logit_fusion, attention, attention_map = [], [], [], [], []
                 for batch_id in range(num_batches):
                     keys_tmp = [divide_into_batches(ks, num_batches)[batch_id] for ks in keys]
                     logits_tmp = [divide_into_batches(ls, num_batches)[batch_id] for ls in logits]
@@ -626,7 +628,7 @@ class HACA3:
                     query_tmp = query.view(1, self.theta_dim + self.eta_dim, 1).repeat(batch_size, 1, 1)
                     k = torch.cat(keys_tmp, dim=-1).view(batch_size, self.theta_dim + self.eta_dim, 1, len(source_images))
                     v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images))
-                    logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, None, 5.0)
+                    logit_fusion_tmp, attention_tmp, attention_map_tmp = self.attention_module(query_tmp, k, v, None, 5.0)
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
                     combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
                     rec_image_tmp = self.decoder(combined_map) * masks_tmp[0]
@@ -635,11 +637,15 @@ class HACA3:
                     beta_fusion.append(beta_fusion_tmp)
                     logit_fusion.append(logit_fusion_tmp)
                     attention.append(attention_tmp)
+                    attention_map.append(attention_map_tmp)
+
 
                 rec_image = torch.cat(rec_image, dim=0)
                 beta_fusion = torch.cat(beta_fusion, dim=0)
                 logit_fusion = torch.cat(logit_fusion, dim=0)
                 attention = torch.cat(attention, dim=0)
+                attention_map = torch.cat(attention_map, dim=0)
+
 
                 # ===5. SAVE INTERMEDIATE RESULTS (IF REQUESTED)===
                 # harmonized image
@@ -673,6 +679,12 @@ class HACA3:
                         img_save = attention.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
                         img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96], None, header)
                         file_name = intermediate_out_dir / f'{out_prefix}_attention.nii.gz'
+                        nib.save(img_save, file_name)
+                    # 5d. attention_map
+                    if recon_orientation == 'axial' and attention_map:
+                        img_save = attention_map.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
+                        img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96], None, header)
+                        file_name = intermediate_out_dir / f'{out_prefix}_attention_map.nii.gz'
                         nib.save(img_save, file_name)
         if header is None:
             return rec_image.cpu().squeeze()
