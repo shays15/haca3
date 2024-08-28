@@ -681,7 +681,7 @@ class HACA3:
                         file_name = intermediate_out_dir / f'{out_prefix}_attention.nii.gz'
                         nib.save(img_save, file_name)
                     # 5d. attention_map
-                    if recon_orientation == 'axial' and attention_map:
+                    if recon_orientation == 'axial' and attention_map != []:
                         img_save = attention_map.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
                         img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96], None, header)
                         file_name = intermediate_out_dir / f'{out_prefix}_attention_map.nii.gz'
