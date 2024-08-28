@@ -222,7 +222,7 @@ class AttentionModule(nn.Module):
 
         self.scale = self.dim ** (-0.5)
 
-    def forward(self, q, k, v, modality_dropout=None, temperature=10.0):
+    def forward(self, q, k, v, modality_dropout=None, temperature=10.0, mask=None):
         """
         Attention module for optimal anatomy fusion.
 
@@ -273,4 +273,6 @@ class AttentionModule(nn.Module):
         v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
         attention = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
         attention_map = attention
+        if mask is not None:
+            attention_map = attention_map * mask
         return v, attention, attention_map
