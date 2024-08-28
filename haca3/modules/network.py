@@ -274,12 +274,15 @@ class AttentionModule(nn.Module):
         attention = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
 
         mask = torch.stack(mask)
+        print(mask.shape)
 
         # Transpose the mask to match the order of dimensions in attention
         mask = mask.permute(1, 0, 2, 3, 4)  # This changes the order to [batch_size, num_contrasts, 1, 224, 224]
+        print(mask.shape)
 
         # Now you can safely expand the mask
-        mask = mask.expand(-1, -1, attention.size(2), attention.size(3), -1).squeeze(4)
+        mask = mask.squeeze(2)  # Squeeze the third dimension to reduce the shape to [56, 3, 224, 224]
+        print(mask.shape)
 
         #if isinstance(mask, list):
         #    mask = torch.tensor(mask)
