@@ -273,6 +273,7 @@ class AttentionModule(nn.Module):
         v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
         attention = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
 
+        mask = torch.stack(mask)
         mask = mask.expand(-1, attention.size(1), -1, -1, -1).squeeze(2)
 
         #if isinstance(mask, list):
