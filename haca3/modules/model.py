@@ -243,8 +243,8 @@ class HACA3:
 
         if contrast_dropout:
             available_contrast_id = dropout_contrasts(available_contrast_id, contrast_id_to_drop)
-        logit_fusion, attention, attention_map = self.attention_module(q, k, v, modality_dropout=1 - available_contrast_id,
-                                                        temperature=10.0, mask)
+        logit_fusion, attention, attention_map = self.attention_module(q, k, v, mask, modality_dropout=1 - available_contrast_id,
+                                                        temperature=10.0)
         beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
         combined_map = torch.cat([beta_fusion, target_theta.repeat(1, 1, image_dim, image_dim)], dim=1)
         rec_image = self.decoder(combined_map) * mask
@@ -628,7 +628,7 @@ class HACA3:
                     query_tmp = query.view(1, self.theta_dim + self.eta_dim, 1).repeat(batch_size, 1, 1)
                     k = torch.cat(keys_tmp, dim=-1).view(batch_size, self.theta_dim + self.eta_dim, 1, len(source_images))
                     v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images))
-                    logit_fusion_tmp, attention_tmp, attention_map_tmp = self.attention_module(query_tmp, k, v, None, 5.0, masks_tmp)
+                    logit_fusion_tmp, attention_tmp, attention_map_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
                     combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
                     rec_image_tmp = self.decoder(combined_map) * masks_tmp[0]
