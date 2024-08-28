@@ -213,3 +213,7 @@ def main(args=None):
         decode_img_paths = [out_path.parent / f'{prefix}_harmonized_{orient}.nii.gz'
                             for orient in ['axial', 'coronal', 'sagittal']]
         haca3.combine_images(decode_img_paths, out_path, norm_val, args.fusion_model)
+
+if __name__ == '__main__':
+        main()
+
