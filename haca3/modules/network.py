@@ -272,6 +272,8 @@ class AttentionModule(nn.Module):
         v = attention.view(batch_size, num_v_patches, 1, num_contrasts) @ v
         v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
         attention = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
+        if isinstance(mask, list):
+            mask = torch.tensor(mask)
         print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
         print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
         print(f"Attention: {attention}")
