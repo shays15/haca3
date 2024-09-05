@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import math
+from scipy.ndimage import label
 
 
 class FusionNet(nn.Module):
@@ -291,5 +292,11 @@ class AttentionModule(nn.Module):
         #print(f"Attention: {attention}")
         #print(f"Mask: {mask}")
 
-        attention_map = attention * mask
+        mask_np = mask.cpu().numpy()
+        labeled_mask, num_features = label(mask_np)
+        largest_component = np.argmax(np.bincount(labeled_mask.flat)[1:]) + 1  # Ignore background label 0
+        largest_mask = (labeled_mask == largest_component).astype(np.float32)
+        mask_component = torch.from_numpy(largest_mask).to(mask.device)
+
+        attention_map = attention * mask_component
         return v, attention, attention_map
