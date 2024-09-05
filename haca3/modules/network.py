@@ -273,8 +273,8 @@ class AttentionModule(nn.Module):
             dot_prod_interp = dot_prod_interp - (modality_dropout.repeat(1, image_dim, image_dim, 1).detach() * 1e5)
 
         attention = (dot_prod_interp / temperature).softmax(dim=-1)
-        v = attention.view(batch_size, num_v_patches, 1, num_contrasts) @ v
-        v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
+        # v = attention.view(batch_size, num_v_patches, 1, num_contrasts) @ v
+        # v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
         attention = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
 
         mask = torch.stack(mask)
@@ -297,5 +297,14 @@ class AttentionModule(nn.Module):
 
         attention_map = attention * mask
         print(f"Attention Map type: {attention_map.dtype}, shape: {attention_map.shape}")
+
+        # Normalize the attention map
+        normalized_attention_map = normalize_attention(attention_map)
+
+        # Use the normalized attention map instead of the original attention for v calculation
+        v = normalized_attention_map.view(batch_size, num_v_patches, 1, num_contrasts) @ v
+        v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
+        attention = normalized_attention_map.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
         
-        return v, attention, normalize_attention(attention_map)
+        return v, attention, normalized_attention_map
+        
