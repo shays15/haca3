@@ -275,7 +275,8 @@ class AttentionModule(nn.Module):
         attention = (dot_prod_interp / temperature).softmax(dim=-1)
         # v = attention.view(batch_size, num_v_patches, 1, num_contrasts) @ v
         # v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
-        attention = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
+        attention_old = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
+        print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
 
         mask = torch.stack(mask)
         print(mask.shape)
