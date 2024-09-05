@@ -176,8 +176,8 @@ def normalize_attention(attention_map):
     # Sum over the channels dimension (dim=1)
     attention_sum = attention_map.sum(dim=1, keepdim=True)  # Shape: [batch_size, 1, height, width]
 
-    # Find where all channels are 0
-    zero_sum_mask = (attention_sum == 0)  # Shape: [batch_size, 1, height, width]
+    # Find where all channels are ~0
+    zero_sum_mask = (attention_sum < 1e-6)  # Shape: [batch_size, 1, height, width]
 
     # Set all-zero areas to equal weighting across channels
     num_contrasts = attention_map.size(1)
