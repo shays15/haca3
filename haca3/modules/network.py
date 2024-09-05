@@ -314,5 +314,5 @@ class AttentionModule(nn.Module):
         attention = normalized_attention_map.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
 
         normalized_attention_map=[]
-        return v, attention, normalized_attention_map
+        return v, attention
         
