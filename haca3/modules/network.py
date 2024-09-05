@@ -4,6 +4,8 @@ import torch.nn.functional as F
 import math
 from scipy.ndimage import label
 import numpy as np
+from .utils import normalize_attention
+
 
 
 class FusionNet(nn.Module):
@@ -296,4 +298,4 @@ class AttentionModule(nn.Module):
         attention_map = attention * mask
         print(f"Attention Map type: {attention_map.dtype}, shape: {attention_map.shape}")
         
-        return v, attention, attention_map
+        return v, attention, normalize_attention(attention_map)
