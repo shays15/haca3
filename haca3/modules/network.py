@@ -294,7 +294,7 @@ class AttentionModule(nn.Module):
         #print(f"Mask: {mask}")
 
         mask_np = mask.cpu().numpy
-        batch_size, num_contrasts, height, width = mask_np.shape
+        batch_size, num_contrasts, height, width = mask.shape
         cleaned_mask = np.zeros_like(mask_np)  # Initialize cleaned mask
         
         # Loop through each batch and contrast
