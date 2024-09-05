@@ -248,7 +248,7 @@ class HACA3:
         beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
         combined_map = torch.cat([beta_fusion, target_theta.repeat(1, 1, image_dim, image_dim)], dim=1)
         rec_image = self.decoder(combined_map) * mask
-        attention_map = normalize_attention(attention_map)
+        # attention_map = normalize_attention(attention_map)
         return rec_image, attention, logit_fusion, beta_fusion, attention_map
 
     def calculate_features_for_contrastive_loss(self, betas, source_images, available_contrast_id):
@@ -636,7 +636,7 @@ class HACA3:
 
                     
                     logit_fusion_tmp, attention_tmp, attention_map_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
-                    attention_map_tmp = normalize_attention(attention_map_tmp)
+                    # attention_map_tmp = normalize_attention(attention_map_tmp)
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
                     combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
                     rec_image_tmp = self.decoder(combined_map) * masks_tmp[0]
