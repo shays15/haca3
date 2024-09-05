@@ -286,7 +286,7 @@ class AttentionModule(nn.Module):
         print(mask.shape)
 
         # Now you can safely expand the mask
-        mask = mask.squeeze(2)  # Squeeze the third dimension to reduce the shape to [56, 3, 224, 224]
+        mask = mask.squeeze(1)  # Squeeze the -- dimension to reduce the shape to [56, 224, 224, 3]
         print(mask.shape)
 
         #if isinstance(mask, list):
