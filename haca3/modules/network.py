@@ -293,11 +293,27 @@ class AttentionModule(nn.Module):
         #print(f"Attention: {attention}")
         #print(f"Mask: {mask}")
 
-        mask_np = mask.cpu().numpy()
-        labeled_mask, num_features = label(mask_np)
-        largest_component = np.argmax(np.bincount(labeled_mask.flat)[1:]) + 1  # Ignore background label 0
-        largest_mask = (labeled_mask == largest_component).astype(np.float32)
-        mask_component = torch.from_numpy(largest_mask).to(mask.device)
-
+        mask_np = mask.cpu().numpy
+        batch_size, num_contrasts, height, width = mask_np.shape
+        cleaned_mask = np.zeros_like(mask_np)  # Initialize cleaned mask
+        
+        # Loop through each batch and contrast
+        for b in range(batch_size):
+            for c in range(num_contrasts):
+                # Get 2D slice for the current batch and contrast
+                slice_2d = mask_np[b, c, :, :]
+    
+                # Label connected components in 2D slice
+                labeled_slice, num_features = label(slice_2d)
+    
+                if num_features > 0:
+                    # Find the largest connected component
+                    largest_component = np.argmax(np.bincount(labeled_slice.flat)[1:]) + 1  # Ignore background label 0
+    
+                    # Create a mask with only the largest component
+                    cleaned_mask[b, c, :, :] = (labeled_slice == largest_component).astype(np.float32)
+        
+        mask_component = torch.from_numpy(cleaned_mask).to(mask.device)
+        
         attention_map = attention * mask_component
         return v, attention, attention_map
