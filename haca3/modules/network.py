@@ -294,5 +294,38 @@ class AttentionModule(nn.Module):
         #print(f"Mask: {mask}")
 
         attention_map = attention * mask
+        print(f"Attention Map type: {attention_map.dtype}, shape: {attention_map.shape}")
+        
+        attention_map = normalize_attention(attention_map)
 
         return v, attention, attention_map
+        
+    def normalize_attention(attention_map):
+        """
+        Normalize the attention map such that the channels sum to 1.
+        - If all channels are 0, distribute attention equally.
+        - If some channels are 0, normalize the remaining non-zero values to sum to 1.
+    
+        Args:
+        - attention_map (torch.Tensor): Attention map of shape [batch_size, num_contrasts, height, width].
+        
+        Returns:
+        - torch.Tensor: Normalized attention map.
+        """
+        # Sum over the channels dimension (dim=1)
+        attention_sum = attention_map.sum(dim=1, keepdim=True)  # Shape: [batch_size, 1, height, width]
+    
+        # Find where all channels are 0
+        zero_sum_mask = (attention_sum == 0)  # Shape: [batch_size, 1, height, width]
+    
+        # Set all-zero areas to equal weighting across channels
+        num_contrasts = attention_map.size(1)
+        attention_map[zero_sum_mask.expand_as(attention_map)] = 1.0 / num_contrasts
+    
+        # Recalculate the sum after handling all-zero channels
+        attention_sum = attention_map.sum(dim=1, keepdim=True)  # Recompute after handling zero cases
+    
+        # Normalize non-zero attention values
+        attention_map = attention_map / (attention_sum + 1e-6)  # Avoid division by zero
+    
+        return attention_map
