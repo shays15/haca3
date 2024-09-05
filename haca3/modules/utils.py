@@ -174,20 +174,29 @@ def normalize_attention(attention_map):
     Returns:
     - torch.Tensor: Normalized attention map.
     """
-    # Sum over the channels dimension (dim=4)
-    attention_sum = attention_map.sum(dim=4, keepdim=True)  # Shape: [batch_size, height, width, 1]
+
+    print(f"attention_map type: {attention_map.dtype}, shape: {attention_map.shape}")
+
+    # Sum over the channels dimension (dim=3)
+    attention_sum = attention_map.sum(dim=3, keepdim=True)  # Shape: [batch_size, height, width, 1]
+    print(f"attention_sum type: {attention_sum.dtype}, shape: {attention_sum.shape}")
 
     # Find where all channels are ~0
     zero_sum_mask = (attention_sum < 1e-6)  # Shape: [batch_size, height, width, 1]
+    print(f"zero_sum_mask type: {zero_sum_mask.dtype}, shape: {zero_sum_mask.shape}")
 
     # Set all-zero areas to equal weighting across channels
-    num_contrasts = attention_map.size(4)
+    num_contrasts = attention_map.size(3)
+    print(f"num_contrasts: {num_contrasts}")
+    
     attention_map[zero_sum_mask.expand_as(attention_map)] = 1.0 / num_contrasts
 
     # Recalculate the sum after handling all-zero channels
-    attention_sum = attention_map.sum(dim=4, keepdim=True)  # Recompute after handling zero cases
+    attention_sum = attention_map.sum(dim=3, keepdim=True)  # Recompute after handling zero cases
+    print(f"attention_sum type: {attention_sum.dtype}, shape: {attention_sum.shape}")
 
     # Normalize non-zero attention values
     attention_map = attention_map / (attention_sum + 1e-6)  # Avoid division by zero
+    print(f"attention_map type: {attention_map.dtype}, shape: {attention_map.shape}")
 
     return attention_map
