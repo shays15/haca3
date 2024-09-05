@@ -3,6 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 import math
 from scipy.ndimage import label
+import numpy as np
 
 
 class FusionNet(nn.Module):
