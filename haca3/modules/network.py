@@ -305,6 +305,8 @@ class AttentionModule(nn.Module):
         normalized_attention_map[:, 112:, 112:, 1] = 0.5  # Bottom-right quarter, 3rd channel
         normalized_attention_map[:, :112, :112, 2] = 0  # Top-left quarter, 3rd channel
         normalized_attention_map[:, 112:, 112:, 2] = 0.5  # Bottom-right quarter, 3rd channel
+        print(f"normalized_attention_map shape after manual modification: {normalized_attention_map.shape}")
+
         
         # Use the normalized attention map instead of the original attention for v calculation
         v = normalized_attention_map.view(batch_size, num_v_patches, 1, num_contrasts) @ v
