@@ -550,7 +550,7 @@ class HACA3:
                     batch_size = source_image_batch.shape[0]
                     source_image_batch = source_image_batch.to(self.device)
                     #mask = (source_image_batch > 1e-6) * 1.0
-                    mask = (source_image_batch > 1e-3) * 1.0
+                    mask = (source_image_batch > 1e-2) * 1.0
                     logit = self.beta_encoder(source_image_batch)
                     beta = self.channel_aggregation(reparameterize_logit(logit))
                     theta_source, _ = self.theta_encoder(source_image_batch)
