@@ -296,6 +296,4 @@ class AttentionModule(nn.Module):
         attention_map = attention * mask
         print(f"Attention Map type: {attention_map.dtype}, shape: {attention_map.shape}")
         
-        attention_map = normalize_attention(attention_map)
-
         return v, attention, attention_map
