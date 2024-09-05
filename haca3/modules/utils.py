@@ -169,22 +169,23 @@ def normalize_attention(attention_map):
 
     Args:
     - attention_map (torch.Tensor): Attention map of shape [batch_size, num_contrasts, height, width].
+    - attention_map (torch.Tensor): Attention map of shape [batch_size, height, width, num_contrasts].
     
     Returns:
     - torch.Tensor: Normalized attention map.
     """
-    # Sum over the channels dimension (dim=1)
-    attention_sum = attention_map.sum(dim=1, keepdim=True)  # Shape: [batch_size, 1, height, width]
+    # Sum over the channels dimension (dim=4)
+    attention_sum = attention_map.sum(dim=4, keepdim=True)  # Shape: [batch_size, height, width, 1]
 
     # Find where all channels are ~0
-    zero_sum_mask = (attention_sum < 1e-6)  # Shape: [batch_size, 1, height, width]
+    zero_sum_mask = (attention_sum < 1e-6)  # Shape: [batch_size, height, width, 1]
 
     # Set all-zero areas to equal weighting across channels
-    num_contrasts = attention_map.size(1)
+    num_contrasts = attention_map.size(4)
     attention_map[zero_sum_mask.expand_as(attention_map)] = 1.0 / num_contrasts
 
     # Recalculate the sum after handling all-zero channels
-    attention_sum = attention_map.sum(dim=1, keepdim=True)  # Recompute after handling zero cases
+    attention_sum = attention_map.sum(dim=4, keepdim=True)  # Recompute after handling zero cases
 
     # Normalize non-zero attention values
     attention_map = attention_map / (attention_sum + 1e-6)  # Avoid division by zero
