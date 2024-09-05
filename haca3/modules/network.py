@@ -275,7 +275,7 @@ class AttentionModule(nn.Module):
         attention = (dot_prod_interp / temperature).softmax(dim=-1)
         # v = attention.view(batch_size, num_v_patches, 1, num_contrasts) @ v
         # v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
-        attention_old = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
+        # attention_old = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
         print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
 
         mask = torch.stack(mask)
@@ -289,18 +289,15 @@ class AttentionModule(nn.Module):
         mask = mask.squeeze(1)  # Squeeze the -- dimension to reduce the shape to [56, 224, 224, 3]
         print(mask.shape)
 
-        #if isinstance(mask, list):
-        #    mask = torch.tensor(mask)
         print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
         print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
-        #print(f"Attention: {attention}")
-        #print(f"Mask: {mask}")
 
         attention_map = attention * mask
         print(f"Attention Map type: {attention_map.dtype}, shape: {attention_map.shape}")
 
         # Normalize the attention map
         normalized_attention_map = normalize_attention(attention_map)
+        print(f"Normalization Attention Map type: {normalized_attention_map.dtype}, shape: {normalized_attention_map.shape}")
 
         # Use the normalized attention map instead of the original attention for v calculation
         v = normalized_attention_map.view(batch_size, num_v_patches, 1, num_contrasts) @ v
