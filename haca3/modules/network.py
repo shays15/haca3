@@ -275,19 +275,18 @@ class AttentionModule(nn.Module):
         attention = (dot_prod_interp / temperature).softmax(dim=-1)
         # v = attention.view(batch_size, num_v_patches, 1, num_contrasts) @ v
         # v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
-        # attention_old = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
-        print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
+        # attention = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
 
         mask = torch.stack(mask)
-        print(mask.shape)
+        # print(mask.shape)
 
         # Transpose the mask to match the order of dimensions in attention
         mask = mask.permute(1, 2, 3, 4, 0)  # This changes the order to [batch_size, num_contrasts, 1, 224, 224]
-        print(mask.shape)
+        # print(mask.shape)
 
         # Now you can safely expand the mask
         mask = mask.squeeze(1)  # Squeeze the -- dimension to reduce the shape to [56, 224, 224, 3]
-        print(mask.shape)
+        # print(mask.shape)
 
         print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
         print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
