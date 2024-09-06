@@ -279,7 +279,9 @@ class AttentionModule(nn.Module):
 
         print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
 
-        mask = torch.stack(mask)
+        if isinstance(mask, list):
+            mask = torch.stack(mask)
+
         # print(mask.shape)
 
         # Transpose the mask to match the order of dimensions in attention
