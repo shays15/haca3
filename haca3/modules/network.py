@@ -298,14 +298,14 @@ class AttentionModule(nn.Module):
         normalized_attention_map = normalize_attention(attention_map)
         # print(f"Normalization Attention Map type: {normalized_attention_map.dtype}, shape: {normalized_attention_map.shape}")
 
-        # Manual Attention Map (size:[56, 224, 224, 3])
-        normalized_attention_map[:, :112, :, 0] = 1  
-        normalized_attention_map[:, :112, :, 0] = 0 
-        normalized_attention_map[:, :112, :, 1] = 0 
-        normalized_attention_map[:, :112, :, 1] = 0.5
-        normalized_attention_map[:, :112, :, 2] = 0 
-        normalized_attention_map[:, :112, :, 2] = 0.5
-        # print(f"normalized_attention_map shape after manual modification: {normalized_attention_map.shape}")
+        # # Manual Attention Map (size:[56, 224, 224, 3])
+        # normalized_attention_map[:, :112, :, 0] = 1  
+        # normalized_attention_map[:, :112, :, 0] = 0 
+        # normalized_attention_map[:, :112, :, 1] = 0 
+        # normalized_attention_map[:, :112, :, 1] = 0.5
+        # normalized_attention_map[:, :112, :, 2] = 0 
+        # normalized_attention_map[:, :112, :, 2] = 0.5
+        # # print(f"normalized_attention_map shape after manual modification: {normalized_attention_map.shape}")
 
         
         # Use the normalized attention map instead of the original attention for v calculation
