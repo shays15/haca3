@@ -288,24 +288,24 @@ class AttentionModule(nn.Module):
         mask = mask.squeeze(1)  # Squeeze the -- dimension to reduce the shape to [56, 224, 224, 3]
         # print(mask.shape)
 
-        print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
-        print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
+        # print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
+        # print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
 
         attention_map = attention * mask
-        print(f"Attention Map type: {attention_map.dtype}, shape: {attention_map.shape}")
+        # print(f"Attention Map type: {attention_map.dtype}, shape: {attention_map.shape}")
 
         # Normalize the attention map
         normalized_attention_map = normalize_attention(attention_map)
-        print(f"Normalization Attention Map type: {normalized_attention_map.dtype}, shape: {normalized_attention_map.shape}")
+        # print(f"Normalization Attention Map type: {normalized_attention_map.dtype}, shape: {normalized_attention_map.shape}")
 
-        # Manual Attention Map (size:[56, 224, 224, 3])
-        normalized_attention_map[:, :, :112, 0] = 1  
-        normalized_attention_map[:, :, 112:, 0] = 0 
-        normalized_attention_map[:, :, :112, 1] = 0 
-        normalized_attention_map[:, :, 112:, 1] = 0.5
-        normalized_attention_map[:, :, :112, 2] = 0 
-        normalized_attention_map[:, :, 112:, 2] = 0.5
-        print(f"normalized_attention_map shape after manual modification: {normalized_attention_map.shape}")
+        # # Manual Attention Map (size:[56, 224, 224, 3])
+        # normalized_attention_map[:, :, :112, 0] = 1  
+        # normalized_attention_map[:, :, 112:, 0] = 0 
+        # normalized_attention_map[:, :, :112, 1] = 0 
+        # normalized_attention_map[:, :, 112:, 1] = 0.5
+        # normalized_attention_map[:, :, :112, 2] = 0 
+        # normalized_attention_map[:, :, 112:, 2] = 0.5
+        # print(f"normalized_attention_map shape after manual modification: {normalized_attention_map.shape}")
 
         
         # Use the normalized attention map instead of the original attention for v calculation
