@@ -285,15 +285,13 @@ class AttentionModule(nn.Module):
         # print(mask.shape)
 
         # Transpose the mask to match the order of dimensions in attention
-        mask = mask.permute(1, 2, 3, 4, 0)  # This changes the order to [batch_size, num_contrasts, 1, 224, 224]
+        if len(mask.shape)==5:
+            mask = mask.permute(1, 2, 3, 4, 0)  # This changes the order to [batch_size, num_contrasts, 1, 224, 224]
+            mask = mask.squeeze(1)  # Squeeze the -- dimension to reduce the shape to [56, 224, 224, 3]
         # print(mask.shape)
 
-        # Now you can safely expand the mask
-        mask = mask.squeeze(1)  # Squeeze the -- dimension to reduce the shape to [56, 224, 224, 3]
-        # print(mask.shape)
-
-        # print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
-        # print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
+        print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
+        print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
 
         attention_map = attention * mask
         # print(f"Attention Map type: {attention_map.dtype}, shape: {attention_map.shape}")
