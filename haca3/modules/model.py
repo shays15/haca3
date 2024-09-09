@@ -396,7 +396,8 @@ class HACA3:
             is_train = False
 
         source_images = self.prepare_source_images(image_dicts)
-        mask = image_dicts[0]['mask'].to(self.device)
+        # mask = image_dicts[0]['mask'].to(self.device)
+        mask = torch.stack([d['mask'] for d in image_dicts], dim=-1).to(self.device)
         print(f'Mask in model is: {mask.shape}')
         print(f'Length of image_dicts[0] is: {len(image_dicts[0])}')
         print(f'Length of image_dicts is: {len(image_dicts)}')
