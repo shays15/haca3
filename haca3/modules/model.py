@@ -399,6 +399,7 @@ class HACA3:
         mask = image_dicts[0]['mask'].to(self.device)
         print(f'Mask in model is: {mask.shape}')
         print(f'Length of image_dicts[0] is: {len(image_dicts[0])}')
+        print(f'Length of image_dicts is: {len(image_dicts)}')
         print(f'Keys in image_dicts[0] are: {list(image_dicts[0].keys())}')
 
 
