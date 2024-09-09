@@ -396,18 +396,18 @@ class HACA3:
             is_train = False
 
         source_images = self.prepare_source_images(image_dicts)
-        # mask = image_dicts[0]['mask'].to(self.device)
-        mask = torch.stack([d['mask'] for d in image_dicts], dim=-1).to(self.device)
-        print(f'Mask in model is: {mask.shape}')
-        print(f'Length of image_dicts[0] is: {len(image_dicts[0])}')
-        print(f'Length of image_dicts is: {len(image_dicts)}')
-        print(f'Keys in image_dicts[0] are: {list(image_dicts[0].keys())}')
+        mask = image_dicts[0]['mask'].to(self.device)
+        masks = torch.stack([d['mask'] for d in image_dicts], dim=-1).to(self.device)
+        # print(f'Mask in model is: {mask.shape}')
+        # print(f'Length of image_dicts[0] is: {len(image_dicts[0])}')
+        # print(f'Length of image_dicts is: {len(image_dicts)}')
+        # print(f'Keys in image_dicts[0] are: {list(image_dicts[0].keys())}')
 
 
         target_image, contrast_id_for_decoding = self.select_available_contrasts(image_dicts)
         # available_contrast_id: (batch_size, num_contrasts). 1: if available, 0: otherwise.
         available_contrast_id = torch.stack([d['exists'] for d in image_dicts], dim=-1).to(self.device)
-        print(f'available_contrast_id in model is: {available_contrast_id.shape}')
+        # print(f'available_contrast_id in model is: {available_contrast_id.shape}')
         batch_size = source_images[0].shape[0]
 
         # ====== 1. INTRA-SITE IMAGE-TO-IMAGE TRANSLATION ======
@@ -424,7 +424,7 @@ class HACA3:
             contrast_id_to_drop = None
         rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
                                                                       available_contrast_id,
-                                                                      mask,
+                                                                      masks,
                                                                       contrast_dropout=contrast_dropout,
                                                                       contrast_id_to_drop=contrast_id_to_drop)
         loss = self.calculate_loss(rec_image, target_image, mask, mu_target, logvar_target,
