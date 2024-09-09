@@ -247,7 +247,7 @@ class HACA3:
                                                         temperature=10.0)
         beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
         combined_map = torch.cat([beta_fusion, target_theta.repeat(1, 1, image_dim, image_dim)], dim=1)
-        rec_image = self.decoder(combined_map) * mask
+        rec_image = self.decoder(combined_map)# * mask
         return rec_image, attention, logit_fusion, beta_fusion
 
     def calculate_features_for_contrastive_loss(self, betas, source_images, available_contrast_id):
