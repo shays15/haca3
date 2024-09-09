@@ -397,6 +397,9 @@ class HACA3:
 
         source_images = self.prepare_source_images(image_dicts)
         mask = image_dicts[0]['mask'].to(self.device)
+        print(f'Mask in model is: {mask.shape}')
+        print(f'Image_dicts[0] in model is: {image_dicts[0].shape}')
+
         target_image, contrast_id_for_decoding = self.select_available_contrasts(image_dicts)
         # available_contrast_id: (batch_size, num_contrasts). 1: if available, 0: otherwise.
         available_contrast_id = torch.stack([d['exists'] for d in image_dicts], dim=-1).to(self.device)
