@@ -449,7 +449,7 @@ class HACA3:
             query = torch.cat([theta_target, eta_target], dim=1)
             keys = [torch.cat([theta, eta], dim=1) for (theta, eta) in zip(thetas_source, etas_source)]
             rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
-                                                                          available_contrast_id, mask,
+                                                                          available_contrast_id, masks,
                                                                           contrast_dropout=True)
             theta_recon, _ = self.theta_encoder(rec_image)
             eta_recon = self.eta_encoder(rec_image)
