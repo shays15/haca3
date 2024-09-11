@@ -285,7 +285,7 @@ class AttentionModule(nn.Module):
         print(mask.shape)
 
         # Transpose the mask to match the order of dimensions in attention
-        if len(mask.shape)==5:
+        if len(mask.shape)==5 and mask.shape[0]!= batch_size:
             mask = mask.permute(1, 2, 3, 4, 0)  # This changes the order to [batch_size, num_contrasts, 1, 224, 224]
             #mask = mask.squeeze(1)  # Squeeze the -- dimension to reduce the shape to [56, 224, 224, 3]
         # print(mask.shape)
