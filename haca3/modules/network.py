@@ -277,18 +277,18 @@ class AttentionModule(nn.Module):
         # v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
         # attention = attention.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
 
-        print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
+        #print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
 
         if isinstance(mask, list):
             mask = torch.stack(mask)
 
         # print(mask.shape)
 
-        # # Transpose the mask to match the order of dimensions in attention
-        # if len(mask.shape)==5:
-        #     mask = mask.permute(1, 2, 3, 4, 0)  # This changes the order to [batch_size, num_contrasts, 1, 224, 224]
-        #     mask = mask.squeeze(1)  # Squeeze the -- dimension to reduce the shape to [56, 224, 224, 3]
-        # # print(mask.shape)
+        # Transpose the mask to match the order of dimensions in attention
+        if len(mask.shape)==5:
+            mask = mask.permute(1, 2, 3, 4, 0)  # This changes the order to [batch_size, num_contrasts, 1, 224, 224]
+            #mask = mask.squeeze(1)  # Squeeze the -- dimension to reduce the shape to [56, 224, 224, 3]
+        # print(mask.shape)
         mask = mask.squeeze(1)
 
         print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
