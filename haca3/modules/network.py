@@ -282,7 +282,7 @@ class AttentionModule(nn.Module):
         if isinstance(mask, list):
             mask = torch.stack(mask)
 
-        print(mask.shape)
+        #print(mask.shape)
 
         # Transpose the mask to match the order of dimensions in attention
         if len(mask.shape)==5 and mask.shape[0]!= batch_size:
@@ -291,8 +291,8 @@ class AttentionModule(nn.Module):
         # print(mask.shape)
         mask = mask.squeeze(1)
 
-        print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
-        print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
+        #print(f"Attention type: {attention.dtype}, shape: {attention.shape}")
+        #print(f"Mask type: {mask.dtype}, shape: {mask.shape}")
 
         attention_map = attention * mask
         # print(f"Attention Map type: {attention_map.dtype}, shape: {attention_map.shape}")
