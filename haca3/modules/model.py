@@ -649,7 +649,6 @@ class HACA3:
                     union_mask = np.logical_or.reduce(masks_cpu)
                     union_mask = torch.from_numpy(union_mask).to(masks_tmp[0].device)
                     rec_image_tmp = self.decoder(combined_map) * union_mask
-                    
                     rec_image.append(rec_image_tmp)
                     beta_fusion.append(beta_fusion_tmp)
                     logit_fusion.append(logit_fusion_tmp)
