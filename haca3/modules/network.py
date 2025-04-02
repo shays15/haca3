@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import math
 from scipy.ndimage import label
 import numpy as np
-from .utils import normalize_attention, smooth_attention
+from .utils import normalize_attention, normalize_and_smooth
 
 
 
@@ -298,7 +298,8 @@ class AttentionModule(nn.Module):
         # print(f"Attention Map type: {attention_map.dtype}, shape: {attention_map.shape}")
 
         # Normalize the attention map
-        normalized_attention_map = normalize_attention(attention_map)
+        # normalized_attention_map = normalize_attention(attention_map)
+        normalized_attention_map = normalize_and_smooth_attention(attention_map,diff_threshold=0.3)
         # print(f"Normalization Attention Map type: {normalized_attention_map.dtype}, shape: {normalized_attention_map.shape}")
 
         # # Manual Attention Map (size:[56, 224, 224, 3])
@@ -314,8 +315,7 @@ class AttentionModule(nn.Module):
         # Use the normalized attention map instead of the original attention for v calculation
         v = normalized_attention_map.view(batch_size, num_v_patches, 1, num_contrasts) @ v
         v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
-        norm_attention = normalized_attention_map.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
-        attention = smooth_attention(norm_attention, kernel_size=7, sigma=2.0)
+        attention = normalized_attention_map.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
 
         return v, attention
         
