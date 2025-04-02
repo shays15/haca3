@@ -226,14 +226,18 @@ def normalize_and_smooth_attention(attention_map, diff_threshold=0.3):
     smoothed_map = attention_map.permute(0, 3, 1, 2).clone()  # [B, C, H, W]
     padded = F.pad(smoothed_map, (1, 1, 1, 1), mode='replicate')  # [B, C, H+2, W+2]
 
-    for dy, dx in [(-1,0), (1,0), (0,-1), (0,1)]:
-        shifted = padded[:, :, 1+dy:H+1+dy, 1+dx:W+1+dx]  # Shifted neighbor
-        diff = (smoothed_map - shifted).abs()
-        mask = (diff > diff_threshold).float()
-        avg = 0.5 * (smoothed_map + shifted)
-
-        # Smooth where difference is too large
-        smoothed_map = smoothed_map + (avg - smoothed_map) * mask
+    for _ in range(max_iters=5):
+        changed = False
+        for dy, dx in [(-1,0), (1,0), (0,-1), (0,1)]:
+            shifted = padded[:, :, 1+dy:H+1+dy, 1+dx:W+1+dx]  # Shifted neighbor
+            diff = (smoothed_map - shifted).abs()
+            mask = (diff > diff_threshold).float()
+            avg = 0.5 * (smoothed_map + shifted)
+    
+            # Smooth where difference is too large
+            smoothed_map = smoothed_map + (avg - smoothed_map) * mask
+        if not changes:
+            break
 
     # Step 3: Re-normalize across channels (C dim)
     attention_sum = smoothed_map.sum(dim=1, keepdim=True)  # [B, 1, H, W]
