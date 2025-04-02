@@ -223,21 +223,23 @@ def normalize_and_smooth_attention(attention_map, diff_threshold=0.3):
     attention_map = attention_map / (attention_sum + 1e-6)
 
     # Step 2: Smooth across neighbors if difference exceeds threshold
-    padded = F.pad(attention_map.permute(0, 3, 1, 2), (1, 1, 1, 1), mode='replicate')  # [B, C, H+2, W+2]
-    smoothed_map = attention_map.clone()
+    smoothed_map = attention_map.permute(0, 3, 1, 2).clone()  # [B, C, H, W]
+    padded = F.pad(smoothed_map, (1, 1, 1, 1), mode='replicate')  # [B, C, H+2, W+2]
 
     for dy, dx in [(-1,0), (1,0), (0,-1), (0,1)]:
         shifted = padded[:, :, 1+dy:H+1+dy, 1+dx:W+1+dx]  # Shifted neighbor
-        diff = (attention_map.permute(0, 3, 1, 2) - shifted).abs()  # [B, C, H, W]
+        diff = (smoothed_map - shifted).abs()
         mask = (diff > diff_threshold).float()
-        avg = 0.5 * (attention_map.permute(0, 3, 1, 2) + shifted)
+        avg = 0.5 * (smoothed_map + shifted)
 
-        # Apply smoothing where difference is too high
-        smoothed_map = smoothed_map + (avg - smoothed_map.permute(0, 3, 1, 2)) * mask
-        smoothed_map = smoothed_map.permute(0, 2, 3, 1)  # Back to [B, H, W, C]
+        # Smooth where difference is too large
+        smoothed_map = smoothed_map + (avg - smoothed_map) * mask
 
-    # Step 3: Re-normalize after smoothing
-    attention_sum = smoothed_map.sum(dim=3, keepdim=True)
+    # Step 3: Re-normalize across channels (C dim)
+    attention_sum = smoothed_map.sum(dim=1, keepdim=True)  # [B, 1, H, W]
     smoothed_map = smoothed_map / (attention_sum + 1e-6)
+
+    # Return to original shape [B, H, W, C]
+    smoothed_map = smoothed_map.permute(0, 2, 3, 1)
 
     return smoothed_map
