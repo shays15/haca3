@@ -299,7 +299,7 @@ class AttentionModule(nn.Module):
 
         # Normalize the attention map
         # normalized_attention_map = normalize_attention(attention_map)
-        normalized_attention_map = normalize_and_smooth_attention(attention_map,diff_threshold=0.3)
+        normalized_attention_map = normalize_and_smooth_attention(attention_map,diff_threshold=0.2)
         # print(f"Normalization Attention Map type: {normalized_attention_map.dtype}, shape: {normalized_attention_map.shape}")
 
         # # Manual Attention Map (size:[56, 224, 224, 3])
