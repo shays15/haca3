@@ -236,7 +236,7 @@ def normalize_and_smooth_attention(attention_map, diff_threshold=0.3):
     
             # Smooth where difference is too large
             smoothed_map = smoothed_map + (avg - smoothed_map) * mask
-        if not changes:
+        if not changed:
             break
 
     # Step 3: Re-normalize across channels (C dim)
