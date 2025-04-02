@@ -200,3 +200,50 @@ def normalize_attention(attention_map):
     # print(f"attention_map type: {attention_map.dtype}, shape: {attention_map.shape}")
 
     return attention_map
+
+def gaussian_kernel(kernel_size=5, sigma=1.0, device='cpu'):
+    """Create a 2D Gaussian kernel."""
+    ax = torch.arange(-kernel_size // 2 + 1., kernel_size // 2 + 1., device=device)
+    xx, yy = torch.meshgrid(ax, ax, indexing='ij')
+    kernel = torch.exp(-(xx**2 + yy**2) / (2. * sigma**2))
+    kernel = kernel / kernel.sum()
+    return kernel
+
+def smooth_attention(attention_map, kernel_size=5, sigma=1.0):
+    """
+    Smooth the attention map using a 2D Gaussian filter.
+    
+    Args:
+        attention_map (torch.Tensor): Shape [B, H, W] or [B, H, W, C]
+        kernel_size (int): Size of the Gaussian kernel
+        sigma (float): Standard deviation of the Gaussian
+
+    Returns:
+        torch.Tensor: Smoothed attention map of the same shape
+    """
+    original_shape = attention_map.shape
+    device = attention_map.device
+
+    # Handle [B, H, W, C] -> [B*C, 1, H, W] format
+    if attention_map.dim() == 4:
+        B, H, W, C = attention_map.shape
+        x = attention_map.permute(0, 3, 1, 2).reshape(B * C, 1, H, W)
+    elif attention_map.dim() == 3:
+        B, H, W = attention_map.shape
+        x = attention_map.unsqueeze(1)  # [B, 1, H, W]
+    else:
+        raise ValueError("attention_map must be 3D or 4D")
+
+    kernel = gaussian_kernel(kernel_size, sigma, device=device).unsqueeze(0).unsqueeze(0)  # [1, 1, K, K]
+    kernel = kernel.to(dtype=x.dtype)
+
+    padding = kernel_size // 2
+    x_smooth = F.conv2d(x, kernel, padding=padding, groups=1)
+
+    # Reshape back to original
+    if attention_map.dim() == 4:
+        x_smooth = x_smooth.view(B, C, H, W).permute(0, 2, 3, 1)
+    else:
+        x_smooth = x_smooth.squeeze(1)
+
+    return x_smooth
