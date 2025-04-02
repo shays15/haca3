@@ -226,7 +226,7 @@ def normalize_and_smooth_attention(attention_map, diff_threshold=0.3):
     smoothed_map = attention_map.permute(0, 3, 1, 2).clone()  # [B, C, H, W]
     padded = F.pad(smoothed_map, (1, 1, 1, 1), mode='replicate')  # [B, C, H+2, W+2]
 
-    for _ in range(max_iters=5):
+    for _ in range(5):
         changed = False
         for dy, dx in [(-1,0), (1,0), (0,-1), (0,1)]:
             shifted = padded[:, :, 1+dy:H+1+dy, 1+dx:W+1+dx]  # Shifted neighbor
