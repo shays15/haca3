@@ -216,6 +216,7 @@ def normalize_and_smooth_attention(attention_map, diff_threshold=0.3):
     device = attention_map.device
 
     # Step 1: Normalize so each spatial location sums to 1 across channels
+    nonzero_mask = (attention_map > 1e-6).float()
     attention_sum = attention_map.sum(dim=3, keepdim=True)
     zero_sum_mask = attention_sum < 1e-6
     attention_map[zero_sum_mask.expand_as(attention_map)] = 1.0 / C
@@ -238,10 +239,13 @@ def normalize_and_smooth_attention(attention_map, diff_threshold=0.3):
             smoothed_map = smoothed_map + (avg - smoothed_map) * mask
         if not changed:
             break
+    smoothed_map = smoothed_map * nonzero_mask
 
     # Step 3: Re-normalize across channels (C dim)
     attention_sum = smoothed_map.sum(dim=1, keepdim=True)  # [B, 1, H, W]
+    nonzero_mask = (attention_sum > 1e-6).float()
     smoothed_map = smoothed_map / (attention_sum + 1e-6)
+    smoothed_map = smoothed_map * nonzero_mask
 
     # Return to original shape [B, H, W, C]
     smoothed_map = smoothed_map.permute(0, 2, 3, 1)
