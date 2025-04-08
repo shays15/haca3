@@ -15,7 +15,8 @@ from torch.cuda.amp import autocast
 
 from .utils import *
 from .dataset import HACA3Dataset
-from .network import UNet, ThetaEncoder, EtaEncoder, Patchifier, AttentionModule, FusionNet
+#from .network import UNet, ThetaEncoder, EtaEncoder, Patchifier, AttentionModule, FusionNet
+from .network import UNet, ThetaEncoder, EtaEncoder, Patchifier, SpatialAttentionModule, FusionNet
 
 
 class HACA3:
@@ -40,6 +41,7 @@ class HACA3:
         self.theta_encoder = ThetaEncoder(in_ch=1, out_ch=self.theta_dim)
         self.eta_encoder = EtaEncoder(in_ch=1, out_ch=self.eta_dim)
         self.attention_module = AttentionModule(self.theta_dim + self.eta_dim, v_ch=self.beta_dim)
+        self.attention_module = SpatialAttentionModule(feature_dim=64, key_dim=16, beta_channels=self.beta_dim)
         self.decoder = UNet(in_ch=1 + self.theta_dim, out_ch=1, base_ch=16, final_act='relu')
         self.patchifier = Patchifier(in_ch=1, out_ch=128)
 
@@ -103,13 +105,13 @@ class HACA3:
         if isinstance(images, list):
             thetas, mus, logvars = [], [], []
             for image in images:
-                mu, logvar = self.theta_encoder(image)
+                mu, logvar, theta_feat = self.theta_encoder(image)
                 theta = torch.randn(mu.size()).to(self.device) * torch.sqrt(torch.exp(logvar)) + mu
                 thetas.append(theta)
                 mus.append(mu)
                 logvars.append(logvar)
         else:
-            mus, logvars = self.theta_encoder(images)
+            mus, logvars, theta_feats = self.theta_encoder(images)
             thetas = torch.randn(mus.size()).to(self.device) * torch.sqrt(torch.exp(logvars)) + mus
         return thetas, mus, logvars
 
@@ -126,10 +128,10 @@ class HACA3:
         if isinstance(images, list):
             etas = []
             for image in images:
-                eta = self.eta_encoder(image)
+                eta, eta_feat = self.eta_encoder(image)
                 etas.append(eta)
         else:
-            etas = self.eta_encoder(images)
+            etas, eta_feats = self.eta_encoder(images)
         return etas
 
     def prepare_source_images(self, image_dicts):
@@ -451,8 +453,8 @@ class HACA3:
             rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
                                                                           available_contrast_id, masks,
                                                                           contrast_dropout=True)
-            theta_recon, _ = self.theta_encoder(rec_image)
-            eta_recon = self.eta_encoder(rec_image)
+            theta_recon, _ , _ = self.theta_encoder(rec_image)
+            eta_recon, _ = self.eta_encoder(rec_image)
             beta_recon = self.channel_aggregation(reparameterize_logit(self.beta_encoder(rec_image)))
             cycle_loss = self.calculate_cycle_consistency_loss(theta_recon, theta_target.detach(),
                                                                eta_recon, eta_target.detach(),
@@ -561,8 +563,8 @@ class HACA3:
                     mask = (source_image_batch > 1e-2) * 1.0
                     logit = self.beta_encoder(source_image_batch)
                     beta = self.channel_aggregation(reparameterize_logit(logit))
-                    theta_source, _ = self.theta_encoder(source_image_batch)
-                    eta_source = self.eta_encoder(source_image_batch).view(batch_size, self.eta_dim, 1, 1)
+                    theta_source, _ , _ = self.theta_encoder(source_image_batch)
+                    eta_source, _ = self.eta_encoder(source_image_batch).view(batch_size, self.eta_dim, 1, 1)
                     mask_tmp.append(mask)
                     logit_tmp.append(logit)
                     beta_tmp.append(beta)
@@ -577,9 +579,9 @@ class HACA3:
                 queries, thetas_target = [], []
                 for target_image in target_images:
                     target_image = target_image.to(self.device).unsqueeze(1)
-                    theta_target, _ = self.theta_encoder(target_image)
+                    theta_target, _, _ = self.theta_encoder(target_image)
                     theta_target = theta_target.mean(dim=0, keepdim=True)
-                    eta_target = self.eta_encoder(target_image).mean(dim=0, keepdim=True).view(1, self.eta_dim, 1, 1)
+                    eta_target, _ = self.eta_encoder(target_image).mean(dim=0, keepdim=True).view(1, self.eta_dim, 1, 1)
                     thetas_target.append(theta_target)
                     queries.append(
                         torch.cat([theta_target, eta_target], dim=1).view(1, self.theta_dim + self.eta_dim, 1))
