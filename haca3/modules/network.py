@@ -318,4 +318,15 @@ class AttentionModule(nn.Module):
         attention = normalized_attention_map.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
 
         return v, attention
-        
+
+class SpatialAttention(nn.Module):
+    def __init__(self, in_channels, key_dim):
+        super().__init__()
+        self.key_net = nn.Conv2d(in_channels, key_dim, kernel_size=1)
+        self.query_net = nn.Conv2d(in_channels, key_dim, kernel_size=1)
+
+    def forward(self, feature_maps):
+        keys = self.key_net(feature_maps)  # shape: B x d x H x W
+        queries = self.query_net(feature_maps)  # shape: B x d x H x W
+        return keys, queries
+
