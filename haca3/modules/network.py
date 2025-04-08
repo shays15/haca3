@@ -128,8 +128,14 @@ class EtaEncoder(nn.Module):
             nn.LeakyReLU(0.1),
             nn.Conv2d(32, out_ch, 7, 7, 0))
 
+    # def forward(self, x):
+    #     return self.seq(torch.cat([self.in_conv(x), x], dim=1))
+    
     def forward(self, x):
-        return self.seq(torch.cat([self.in_conv(x), x], dim=1))
+        features = self.in_conv(x)                 # spatial features M_η
+        eta = self.seq(torch.cat([features, x], dim=1))  # global latent
+        return eta, features                       # <-- return both
+
 
 
 class Patchifier(nn.Module):
@@ -168,11 +174,18 @@ class ThetaEncoder(nn.Module):
             nn.LeakyReLU(0.1),
             nn.Conv2d(32, out_ch, 6, 6, 0))
 
+    # def forward(self, x):
+    #     M = self.conv(x)
+    #     mu = self.mean_conv(M)
+    #     logvar = self.logvar_conv(M)
+    #     return mu, logvar
+    
     def forward(self, x):
-        M = self.conv(x)
-        mu = self.mean_conv(M)
-        logvar = self.logvar_conv(M)
-        return mu, logvar
+        features = self.conv(x)                  # spatial features M_θ
+        mu = self.mean_conv(features)           # latent θ
+        logvar = self.logvar_conv(features)
+        return mu, logvar, features             # <-- now returns 3 outputs
+
 
 # class ThetaEncoder(nn.Module):
 #     def __init__(self, in_ch, out_ch):
@@ -319,14 +332,40 @@ class AttentionModule(nn.Module):
 
         return v, attention
 
-class SpatialAttention(nn.Module):
-    def __init__(self, in_channels, key_dim):
+class SpatialAttentionModule(nn.Module):
+    def __init__(self, feature_dim=64, key_dim=16, beta_channels=5, num_contrasts=4):
         super().__init__()
-        self.key_net = nn.Conv2d(in_channels, key_dim, kernel_size=1)
-        self.query_net = nn.Conv2d(in_channels, key_dim, kernel_size=1)
+        self.query_net = nn.Conv2d(feature_dim, key_dim, kernel_size=1)
+        self.key_net = nn.Conv2d(feature_dim, key_dim, kernel_size=1)
+        self.scale = key_dim ** -0.5
+        self.num_contrasts = num_contrasts
+        self.beta_channels = beta_channels
 
-    def forward(self, feature_maps):
-        keys = self.key_net(feature_maps)  # shape: B x d x H x W
-        queries = self.query_net(feature_maps)  # shape: B x d x H x W
-        return keys, queries
+    def forward(self, q_feats, k_feats_list, beta_list, mask=None):
+        # q_feats: (B, F, H, W)
+        # k_feats_list: list of (B, F, H, W), one per source
+        # beta_list: list of (B, C, H, W), one per source
+
+        B, F, H, W = q_feats.shape
+        d = self.query_net.out_channels
+
+        q = self.query_net(q_feats)  # (B, d, H, W)
+
+        attention_logits = []
+        for k_feats in k_feats_list:
+            k = self.key_net(k_feats)  # (B, d, H, W)
+            dot = torch.sum(q * k, dim=1, keepdim=True) * self.scale  # (B, 1, H, W)
+            attention_logits.append(dot)
+
+        attention_stack = torch.cat(attention_logits, dim=1)  # (B, N, H, W)
+        attention_weights = F.softmax(attention_stack, dim=1)  # (B, N, H, W)
+
+        # Compute weighted sum over beta maps
+        beta_star = torch.zeros_like(beta_list[0])
+        for i, beta in enumerate(beta_list):
+            weight = attention_weights[:, i:i+1, :, :]  # (B, 1, H, W)
+            beta_star += weight * beta  # Broadcast over channels
+
+        return beta_star
+
 
