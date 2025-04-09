@@ -196,7 +196,7 @@ class HACA3:
         selected_contrast_id[unique_subject_ids, selected_contrast_ids, ...] = 1.0
         return target_image, selected_contrast_id
 
-    def decode(self, logits, target_theta, query, keys, available_contrast_id, mask, contrast_dropout=False,
+def decode(self, logits, target_theta, query, keys, available_contrast_id, mask,
                contrast_id_to_drop=None):
         """
         HACA3 decoding.
@@ -424,11 +424,31 @@ class HACA3:
             contrast_id_to_drop = contrast_id_for_decoding
         else:
             contrast_id_to_drop = None
-        rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
-                                                                      available_contrast_id,
-                                                                      masks,
-                                                                      contrast_dropout=contrast_dropout,
-                                                                      contrast_id_to_drop=contrast_id_to_drop)
+        # === Build features for spatial attention ===
+theta_feats_target = self.theta_encoder(target_image)[2]
+eta_feats_target = self.eta_encoder(target_image)[1]
+
+key_feats_list = []
+beta_list = []
+for src_img in source_images:
+    theta_mu, _, theta_feat = self.theta_encoder(src_img)
+    eta, eta_feat = self.eta_encoder(src_img)
+    combined_feat = torch.cat([theta_feat, eta_feat], dim=1)
+    key_feats_list.append(combined_feat)
+
+    beta = self.beta_encoder(src_img)
+    beta_list.append(beta)
+
+rec_image, attention, logit_fusion, beta_fusion = self.decode(
+    logits=source_images,
+    target_theta=theta_target,
+    query=query,
+    keys=keys,
+    available_contrast_id=available_contrast_id,
+    mask=mask,
+    contrast_dropout=contrast_dropout,
+    contrast_id_to_drop=contrast_id_to_drop
+)
         loss = self.calculate_loss(rec_image, target_image, mask, mu_target, logvar_target,
                                    betas, source_images, available_contrast_id, is_train=is_train)
 
