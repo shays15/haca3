@@ -12,6 +12,7 @@ from torchvision.transforms import ToTensor
 from datetime import datetime
 import nibabel as nib
 from torch.cuda.amp import autocast
+import torch.nn.functional as F
 
 from .utils import *
 from .dataset import HACA3Dataset
@@ -433,6 +434,7 @@ class HACA3:
         for src_img in source_images:
             theta_mu, _, theta_feat = self.theta_encoder(src_img)
             eta, eta_feat = self.eta_encoder(src_img)
+            eta_feat = F.adaptive_avg_pool2d(eta_feat, output_size=theta_feat.shape[-2:])
             combined_feat = torch.cat([theta_feat, eta_feat], dim=1)
             key_feats_list.append(combined_feat)
         
