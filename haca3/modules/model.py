@@ -610,7 +610,7 @@ class HACA3:
                     logit = self.beta_encoder(source_image_batch)
                     beta = self.channel_aggregation(reparameterize_logit(logit))
                     theta_source, _ , _ = self.theta_encoder(source_image_batch)
-                    eta_source, _ = self.eta_encoder(source_image_batch).view(batch_size, self.eta_dim, 1, 1)
+                    eta_source = self.eta_encoder(source_image_batch)[0].view(batch_size, self.eta_dim, 1, 1)
                     mask_tmp.append(mask)
                     logit_tmp.append(logit)
                     beta_tmp.append(beta)
