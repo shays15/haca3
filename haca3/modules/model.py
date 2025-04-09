@@ -43,7 +43,7 @@ class HACA3:
         self.eta_encoder = EtaEncoder(in_ch=1, out_ch=self.eta_dim)
         #self.attention_module = AttentionModule(self.theta_dim + self.eta_dim, v_ch=self.beta_dim)
         self.attention_module = SpatialAttentionModule(feature_dim=128, key_dim=16, beta_channels=self.beta_dim)
-        self.decoder = UNet(in_ch=1 + self.theta_dim, out_ch=1, base_ch=16, final_act='relu')
+        self.decoder = UNet(in_ch=self.beta_dim + self.theta_dim, out_ch=1, base_ch=16, final_act='relu')
         self.patchifier = Patchifier(in_ch=1, out_ch=128)
 
         if pretrained_eta_encoder is not None:
