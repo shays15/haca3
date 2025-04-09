@@ -226,7 +226,7 @@ class HACA3:
     
         key_feats_list, beta_list = [], []
         for i in range(num_contrasts):
-            img = logits[i]  # used as image input
+            img = source_images[i]  # used as image input
             theta_mu, _, theta_feat = self.theta_encoder(img)
             eta, eta_feat = self.eta_encoder(img)
     
