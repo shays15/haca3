@@ -364,7 +364,12 @@ class SpatialAttentionModule(nn.Module):
         beta_star = torch.zeros_like(beta_list[0])
         for i, beta in enumerate(beta_list):
             weight = attention_weights[:, i:i+1, :, :]  # (B, 1, H, W)
-            beta_star += weight * beta  # Broadcast over channels
+        
+            # Resize weight map to match beta if needed
+            if weight.shape[-2:] != beta.shape[-2:]:
+                weight = F.interpolate(weight, size=beta.shape[-2:], mode='bilinear', align_corners=False)
+        
+            beta_star += weight * beta
 
         if return_attention:
             return beta_star, attention_weights
