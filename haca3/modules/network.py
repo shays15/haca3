@@ -342,11 +342,11 @@ class SpatialAttentionModule(nn.Module):
         self.beta_channels = beta_channels
 
     def forward(self, q_feats, k_feats_list, beta_list, return_attention=False):
-        # q_feats: (B, F, H, W)
-        # k_feats_list: list of (B, F, H, W), one per source
+        # q_feats: (B, A, H, W)
+        # k_feats_list: list of (B, A, H, W), one per source
         # beta_list: list of (B, C, H, W), one per source
 
-        B, F, H, W = q_feats.shape
+        B, A, H, W = q_feats.shape
         d = self.query_net.out_channels
 
         q = self.query_net(q_feats)  # (B, d, H, W)
