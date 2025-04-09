@@ -43,7 +43,7 @@ class HACA3:
         self.eta_encoder = EtaEncoder(in_ch=1, out_ch=self.eta_dim)
         #self.attention_module = AttentionModule(self.theta_dim + self.eta_dim, v_ch=self.beta_dim)
         self.attention_module = SpatialAttentionModule(feature_dim=128, key_dim=16, beta_channels=self.beta_dim)
-        self.decoder = UNet(in_ch=self.beta_dim + self.theta_dim, out_ch=1, base_ch=16, final_act='relu')
+        self.decoder = UNet(in_ch=1 + self.theta_dim, out_ch=1, base_ch=16, final_act='relu')
         self.patchifier = Patchifier(in_ch=1, out_ch=128)
 
         if pretrained_eta_encoder is not None:
@@ -203,40 +203,30 @@ class HACA3:
         HACA3 decoding using spatial attention while keeping dropout & masking logic.
     
         ===INPUTS===
-        * logits: list (num_contrasts, )
-            Encoded logit of each source image.
-            Each element has shape (batch_size, self.beta_dim, image_dim, image_dim).
-        * target_theta: torch.Tensor (batch_size, self.theta_dim, 1, 1)
-            theta values of target images used for decoding.
-        * query: torch.Tensor (batch_size, self.theta_dim+self.eta_dim, 1, 1)
-            query variable. Concatenation of "target_theta" and "target_eta".
-        * keys: list (num_contrasts, )
-            keys variable. Each element has shape (batch_size, self.theta_dim+self.eta_dim)
-        * available_contrast_id: torch.Tensor (batch_size, num_contrasts)
-            Indicates which contrasts are available. 1: if available, 0: if unavailable.
+        * logits: list of source images
+        * target_theta: (B, theta_dim, 1, 1)
+        * query: unused for spatial attention but retained for compatibility
+        * keys: unused for spatial attention but retained for compatibility
+        * available_contrast_id: (B, N)
+        * mask: (B, 1, H, W)
         * contrast_dropout: bool
-            Indicates if available contrasts will be randomly dropped out.
+        * contrast_id_to_drop: index of contrast to drop (optional)
     
         ===OUTPUTS===
-        * rec_image: torch.Tensor (batch_size, 1, image_dim, image_dim)
-            Synthetic image after decoding.
-        * attention: torch.Tensor (batch_size, num_contrasts)
-            Learned attention of each source image contrast.
-        * logit_fusion: torch.Tensor (batch_size, self.beta_dim, image_dim, image_dim)
-            Optimal logit after fusion.
-        * beta_fusion: torch.Tensor (batch_size, self.beta_dim, image_dim, image_dim)
-            Optimal beta after fusion. beta_fusion = reparameterize_logit(logit_fusion).
+        * rec_image: (B, 1, H, W)
+        * attention: (B, N, H, W) spatial attention maps
+        * logit_fusion: None
+        * beta_fusion: (B, beta_dim, H, W)
         """
         num_contrasts = len(logits)
         batch_size = logits[0].shape[0]
-        image_dim = logits[0].shape[-1]
     
         if contrast_dropout:
             available_contrast_id = dropout_contrasts(available_contrast_id, contrast_id_to_drop)
     
         key_feats_list, beta_list = [], []
         for i in range(num_contrasts):
-            img = source_images[i]
+            img = logits[i]  # used as image input
             theta_mu, _, theta_feat = self.theta_encoder(img)
             eta, eta_feat = self.eta_encoder(img)
     
@@ -457,7 +447,7 @@ class HACA3:
             beta_list.append(beta)
 
         rec_image, attention, logit_fusion, beta_fusion = self.decode(
-            logits,
+            logits=source_images,
             target_theta=theta_target,
             query=query,
             keys=keys,
