@@ -627,7 +627,8 @@ class HACA3:
                     target_image = target_image.to(self.device).unsqueeze(1)
                     theta_target, _, _ = self.theta_encoder(target_image)
                     theta_target = theta_target.mean(dim=0, keepdim=True)
-                    eta_target = self.eta_encoder(target_image)[0].view(batch_size, self.eta_dim, 1, 1)
+                    eta_target = self.eta_encoder(target_image)[0].view(target_image.shape[0], self.eta_dim, 1, 1)
+
                     thetas_target.append(theta_target)
                     queries.append(
                         torch.cat([theta_target, eta_target], dim=1).view(1, self.theta_dim + self.eta_dim, 1))
