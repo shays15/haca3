@@ -341,7 +341,7 @@ class SpatialAttentionModule(nn.Module):
         self.num_contrasts = num_contrasts
         self.beta_channels = beta_channels
 
-    def forward(self, q_feats, k_feats_list, beta_list, mask=None):
+    def forward(self, q_feats, k_feats_list, beta_list, return_attention=False):
         # q_feats: (B, F, H, W)
         # k_feats_list: list of (B, F, H, W), one per source
         # beta_list: list of (B, C, H, W), one per source
@@ -366,6 +366,9 @@ class SpatialAttentionModule(nn.Module):
             weight = attention_weights[:, i:i+1, :, :]  # (B, 1, H, W)
             beta_star += weight * beta  # Broadcast over channels
 
-        return beta_star
+        if return_attention:
+            return beta_star, attention_weights
+        else:
+            return beta_star
 
 
