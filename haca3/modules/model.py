@@ -197,7 +197,7 @@ class HACA3:
         selected_contrast_id[unique_subject_ids, selected_contrast_ids, ...] = 1.0
         return target_image, selected_contrast_id
 
-    def decode(self, logits, target_theta, query, keys, available_contrast_id, mask,
+    def decode(self, source_images, logits, target_theta, query, keys, available_contrast_id, mask,
                contrast_dropout=False, contrast_id_to_drop=None):
         """
         HACA3 decoding using spatial attention while keeping dropout & masking logic.
