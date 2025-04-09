@@ -41,6 +41,17 @@ class HACA3:
         self.beta_encoder = UNet(in_ch=1, out_ch=self.beta_dim, base_ch=8, final_act='none')
         self.theta_encoder = ThetaEncoder(in_ch=1, out_ch=self.theta_dim)
         self.eta_encoder = EtaEncoder(in_ch=1, out_ch=self.eta_dim)
+        self.theta_to_feat = nn.Sequential(
+            nn.ConvTranspose2d(self.theta_dim, 64, kernel_size=6, stride=6),  # upsample 1x1 → 6x6
+            nn.InstanceNorm2d(64),
+            nn.LeakyReLU(0.1)
+        )
+        
+        self.eta_to_feat = nn.Sequential(
+            nn.ConvTranspose2d(self.eta_dim, 64, kernel_size=6, stride=6),
+            nn.InstanceNorm2d(64),
+            nn.LeakyReLU(0.1)
+        )
         #self.attention_module = AttentionModule(self.theta_dim + self.eta_dim, v_ch=self.beta_dim)
         self.attention_module = SpatialAttentionModule(feature_dim=128, key_dim=16, beta_channels=self.beta_dim)
         self.decoder = UNet(in_ch=self.beta_dim + self.theta_dim, out_ch=1, base_ch=16, final_act='relu')
@@ -242,11 +253,10 @@ class HACA3:
             beta_list.append(beta * mask_i)
     
         # Target features
-        target_theta_feat = self.theta_encoder(logits[0])[2]
-        target_eta_feat = self.eta_encoder(logits[0])[1]
-        target_eta_feat = F.adaptive_avg_pool2d(target_eta_feat, output_size=target_theta_feat.shape[-2:])
+        target_theta_feat = self.theta_to_feat(target_theta)  # (B, 64, 6, 6)
+        target_eta_feat = self.eta_to_feat(query[:, self.theta_dim:, :].view_as(target_theta))  # use η from query
         query_feat = torch.cat([target_theta_feat, target_eta_feat], dim=1)
-    
+
         # Attention fusion
         beta_fusion, attention = self.attention_module(query_feat, key_feats_list, beta_list, return_attention=True)
     
