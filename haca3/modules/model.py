@@ -447,7 +447,8 @@ class HACA3:
             beta_list.append(beta)
 
         rec_image, attention, logit_fusion, beta_fusion = self.decode(
-            logits=source_images,
+            source_images,
+            logits,
             target_theta=theta_target,
             query=query,
             keys=keys,
