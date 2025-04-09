@@ -448,8 +448,8 @@ class HACA3:
             mask=mask,
             contrast_dropout=contrast_dropout,
             contrast_id_to_drop=contrast_id_to_drop)
-            loss = self.calculate_loss(rec_image, target_image, mask, mu_target, logvar_target,
-                                       betas, source_images, available_contrast_id, is_train=is_train)
+        loss = self.calculate_loss(rec_image, target_image, mask, mu_target, logvar_target,
+                                   betas, source_images, available_contrast_id, is_train=is_train)
 
         # ====== 2. SAVE IMAGES OF INTRA-SITE I2I ======
         if batch_id % 100 == 1:
