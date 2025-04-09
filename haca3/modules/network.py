@@ -333,7 +333,7 @@ class AttentionModule(nn.Module):
         return v, attention
 
 class SpatialAttentionModule(nn.Module):
-    def __init__(self, feature_dim=64, key_dim=16, beta_channels=5, num_contrasts=4):
+    def __init__(self, feature_dim=128, key_dim=16, beta_channels=5, num_contrasts=4):
         super().__init__()
         self.query_net = nn.Conv2d(feature_dim, key_dim, kernel_size=1)
         self.key_net = nn.Conv2d(feature_dim, key_dim, kernel_size=1)
