@@ -489,9 +489,16 @@ class HACA3:
             eta_target = self.calculate_eta(target_image_shuffled)
             query = torch.cat([theta_target, eta_target], dim=1)
             keys = [torch.cat([theta, eta], dim=1) for (theta, eta) in zip(thetas_source, etas_source)]
-            rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
-                                                                          available_contrast_id, masks,
-                                                                          contrast_dropout=True)
+            rec_image, attention, logit_fusion, beta_fusion = self.decode(
+                source_images,
+                logits,
+                target_theta=theta_target,
+                query=query,
+                keys=keys,
+                available_contrast_id=available_contrast_id,
+                mask=mask,
+                contrast_dropout=contrast_dropout,
+                contrast_id_to_drop=contrast_id_to_drop)
             theta_recon, _ , _ = self.theta_encoder(rec_image)
             eta_recon, _ = self.eta_encoder(rec_image)
             beta_recon = self.channel_aggregation(reparameterize_logit(self.beta_encoder(rec_image)))
