@@ -198,60 +198,65 @@ class HACA3:
         return target_image, selected_contrast_id
 
     def decode(self, logits, target_theta, query, keys, available_contrast_id, mask,
-               contrast_id_to_drop=None):
+               contrast_dropout=False, contrast_id_to_drop=None):
         """
-        HACA3 decoding.
-
+        HACA3 decoding using spatial attention while keeping dropout & masking logic.
+    
         ===INPUTS===
-        * logits: list (num_contrasts, )
-            Encoded logit of each source image.
-            Each element has shape (batch_size, self.beta_dim, image_dim, image_dim).
-        * target_theta: torch.Tensor (batch_size, self.theta_dim, 1, 1)
-            theta values of target images used for decoding.
-        * query: torch.Tensor (batch_size, self.theta_dim+self.eta_dim, 1, 1)
-            query variable. Concatenation of "target_theta" and "target_eta".
-        * keys: list (num_contrasts, )
-            keys variable. Each element has shape (batch_size, self.theta_dim+self.eta_dim)
-        * available_contrast_id: torch.Tensor (batch_size, num_contrasts)
-            Indicates which contrasts are available. 1: if available, 0: if unavailable.
+        * logits: list of source images
+        * target_theta: (B, theta_dim, 1, 1)
+        * query: unused for spatial attention but retained for compatibility
+        * keys: unused for spatial attention but retained for compatibility
+        * available_contrast_id: (B, N)
+        * mask: (B, 1, H, W)
         * contrast_dropout: bool
-            Indicates if available contrasts will be randomly dropped out.
-
+        * contrast_id_to_drop: index of contrast to drop (optional)
+    
         ===OUTPUTS===
-        * rec_image: torch.Tensor (batch_size, 1, image_dim, image_dim)
-            Synthetic image after decoding.
-        * attention: torch.Tensor (batch_size, num_contrasts)
-            Learned attention of each source image contrast.
-        * logit_fusion: torch.Tensor (batch_size, self.beta_dim, image_dim, image_dim)
-            Optimal logit after fusion.
-        * beta_fusion: torch.Tensor (batch_size, self.beta_dim, image_dim, image_dim)
-            Optimal beta after fusion. beta_fusion = reparameterize_logit(logit_fusion).
-        * attention_map: torch.Tensor (batch_size, num_contrasts)
-            Learned attention map of each source image contrast.
+        * rec_image: (B, 1, H, W)
+        * attention: (B, N, H, W) spatial attention maps
+        * logit_fusion: None
+        * beta_fusion: (B, beta_dim, H, W)
         """
         num_contrasts = len(logits)
         batch_size = logits[0].shape[0]
-        image_dim = logits[0].shape[-1]
-
-        # logits_combined: (batch_size, self.beta_dim, num_contrasts, image_dim * image_dim)
-        logits_combined = torch.stack(logits, dim=-1).permute(0, 1, 4, 2, 3)
-        logits_combined = logits_combined.view(batch_size, self.beta_dim, num_contrasts, image_dim * image_dim)
-
-        # value: (batch_size, self.beta_dim, image_dim*image_dim, num_contrasts)
-        v = logits_combined.permute(0, 1, 3, 2)
-        # key: (batch_size, self.theta_dim+self.eta_dim, 1, num_contrasts)
-        k = torch.cat(keys, dim=-1)
-        # query: (batch_size, self.theta_dim+self.eta_dim, 1)
-        q = query.view(batch_size, self.theta_dim + self.eta_dim, 1)
-
+    
         if contrast_dropout:
             available_contrast_id = dropout_contrasts(available_contrast_id, contrast_id_to_drop)
-        logit_fusion, attention = self.attention_module(q, k, v, mask, modality_dropout=1 - available_contrast_id,
-                                                        temperature=10.0)
-        beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
-        combined_map = torch.cat([beta_fusion, target_theta.repeat(1, 1, image_dim, image_dim)], dim=1)
-        rec_image = self.decoder(combined_map)# * mask
-        return rec_image, attention, logit_fusion, beta_fusion
+    
+        key_feats_list, beta_list = [], []
+        for i in range(num_contrasts):
+            img = logits[i]  # used as image input
+            theta_mu, _, theta_feat = self.theta_encoder(img)
+            eta, eta_feat = self.eta_encoder(img)
+    
+            # Match spatial sizes if needed
+            eta_feat = F.adaptive_avg_pool2d(eta_feat, output_size=theta_feat.shape[-2:])
+            feat = torch.cat([theta_feat, eta_feat], dim=1)
+    
+            # Apply dropout mask
+            mask_i = available_contrast_id[:, i].view(-1, 1, 1, 1)
+            key_feats_list.append(feat * mask_i)
+    
+            beta = self.beta_encoder(img)
+            beta_list.append(beta * mask_i)
+    
+        # Target features
+        target_theta_feat = self.theta_encoder(logits[0])[2]
+        target_eta_feat = self.eta_encoder(logits[0])[1]
+        target_eta_feat = F.adaptive_avg_pool2d(target_eta_feat, output_size=target_theta_feat.shape[-2:])
+        query_feat = torch.cat([target_theta_feat, target_eta_feat], dim=1)
+    
+        # Attention fusion
+        beta_fusion, attention = self.attention_module(query_feat, key_feats_list, beta_list, return_attention=True)
+    
+        image_dim = beta_fusion.shape[-1]
+        theta_exp = target_theta.repeat(1, 1, image_dim, image_dim)
+        combined_map = torch.cat([beta_fusion, theta_exp], dim=1)
+        rec_image = self.decoder(combined_map)
+    
+        return rec_image, attention, None, beta_fusion
+
 
     def calculate_features_for_contrastive_loss(self, betas, source_images, available_contrast_id):
         """
