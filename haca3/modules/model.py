@@ -71,6 +71,8 @@ class HACA3:
         self.beta_encoder.to(self.device)
         self.theta_encoder.to(self.device)
         self.eta_encoder.to(self.device)
+        self.theta_to_feat.to(self.device)
+        self.eta_to_feat.to(self.device)
         self.decoder.to(self.device)
         self.attention_module.to(self.device)
         self.patchifier.to(self.device)
