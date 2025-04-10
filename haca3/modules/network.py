@@ -169,10 +169,10 @@ class ThetaEncoder(nn.Module):
             nn.Conv2d(32, out_ch, 6, 6, 0))
 
     def forward(self, x):
-        M = self.conv(x)
-        mu = self.mean_conv(M)
-        logvar = self.logvar_conv(M)
-        return mu, logvar
+        features = self.conv(x)                  # spatial features M_θ
+        mu = self.mean_conv(features)           # latent θ
+        logvar = self.logvar_conv(features)
+        return mu, logvar, features             # <-- now returns 3 outputs
 
 # class ThetaEncoder(nn.Module):
 #     def __init__(self, in_ch, out_ch):
