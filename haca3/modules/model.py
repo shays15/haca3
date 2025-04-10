@@ -574,6 +574,8 @@ class HACA3:
                     logit_tmp.append(logit)
                     beta_tmp.append(beta)
                     key_tmp.append(torch.cat([theta_source, eta_source], dim=1))
+                    print("theta_source_feature shape:", theta_source_feature.shape)
+                    print("eta_source_feature shape:", eta_source_feature.shape)
                     key_features_tmp.append(torch.cat([theta_source_feature, eta_source_feature], dim=1))
 
                 masks.append(torch.cat(mask_tmp, dim=0))
