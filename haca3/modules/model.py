@@ -15,7 +15,7 @@ from torch.cuda.amp import autocast
 
 from .utils import *
 from .dataset import HACA3Dataset
-from .network import UNet, ThetaEncoder, EtaEncoder, Patchifier, AttentionModule, FusionNet
+from .network import UNet, ThetaEncoder, EtaEncoder, Patchifier, AttentionModule, SpatialAttentionModule, FusionNet
 
 
 class HACA3:
@@ -40,6 +40,7 @@ class HACA3:
         self.theta_encoder = ThetaEncoder(in_ch=1, out_ch=self.theta_dim)
         self.eta_encoder = EtaEncoder(in_ch=1, out_ch=self.eta_dim)
         self.attention_module = AttentionModule(self.theta_dim + self.eta_dim, v_ch=self.beta_dim)
+        self.spatial_attention_module = SpatialAttentionModule(self.theta_dim + self.eta_dim, v_ch=self.beta_dim)
         self.decoder = UNet(in_ch=1 + self.theta_dim, out_ch=1, base_ch=16, final_act='relu')
         self.patchifier = Patchifier(in_ch=1, out_ch=128)
 
@@ -249,6 +250,55 @@ class HACA3:
                                                         temperature=10.0)
         beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
         combined_map = torch.cat([beta_fusion, target_theta.repeat(1, 1, image_dim, image_dim)], dim=1)
+        rec_image = self.decoder(combined_map)# * mask
+        return rec_image, attention, logit_fusion, beta_fusion
+
+    def decode_spatial(self, logits, target_theta_feature, query_features, keys_feature_list, available_contrast_id, mask, contrast_dropout=False,
+               contrast_id_to_drop=None):
+        """
+        Spatial Attention HACA3 decoding.
+    
+        ===INPUTS===
+        * logits: list (num_contrasts, )
+            Encoded beta map of each source image. Shape: (B, beta_dim, H, W)
+        * target_theta_feature: torch.Tensor (B, theta_dim, H, W)
+            Spatially expanded theta values for target.
+        * query_features: torch.Tensor (B, C, H, W)
+            Concatenated spatial features for attention query (e.g. theta+eta).
+        * keys_feature_list: list of torch.Tensor (B, C, H, W)
+            List of concatenated spatial features for each contrast (theta+eta).
+        * available_contrast_id: torch.Tensor (B, num_contrasts)
+            Indicates which contrasts are available. 1: available, 0: missing.
+        * contrast_dropout: bool
+            If True, randomly drops one available contrast during training.
+        * contrast_id_to_drop: int or None
+            ID of contrast to drop out (used when contrast_dropout is True).
+
+        ===OUTPUTS===
+        * rec_image: torch.Tensor (B, 1, H, W)
+            Final reconstructed image.
+        * attention: torch.Tensor (B, N, H, W)
+            Spatial attention weights per contrast.
+        * logit_fusion: None
+            Placeholder to keep return signature consistent.
+        * beta_fusion: torch.Tensor (B, beta_dim, H, W)
+            Attention-weighted beta map.
+        """
+
+        if contrast_dropout:
+            available_contrast_id = dropout_contrasts(available_contrast_id, contrast_id_to_drop)
+        keys=[]
+        values=[]
+        for i in range(len(keys_feature_list)):
+            mask_i = available_contrast_id[:, i].view(-1, 1, 1, 1)
+            keys.append(keys_feature_list[i] * mask_i)
+            values.append(logits[i] * mask_i)
+        # Spatial attention fusion
+        logit_fusion, attention = self.spatial_attention_module(
+            query_features, keys, values, return_attention=True
+        )
+        beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
+        combined_map = torch.cat([beta_fusion, target_theta_feature], dim=1)
         rec_image = self.decoder(combined_map)# * mask
         return rec_image, attention, logit_fusion, beta_fusion
 
