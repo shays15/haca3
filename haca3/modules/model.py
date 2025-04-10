@@ -485,6 +485,13 @@ class HACA3:
                                                                       masks,
                                                                       contrast_dropout=contrast_dropout,
                                                                       contrast_id_to_drop=contrast_id_to_drop)
+        
+        rec_image_sp, attention_sp, logit_fusion_sp, beta_fusion_sp = self.decode_spatial(logits, theta_target_features, 
+                                                                                          query_features, keys_features, 
+                                                                                          available_contrast_id, mask, 
+                                                                                          contrast_dropout=contrast_dropout,
+                                                                                          contrast_id_to_drop=contrast_id_to_drop)
+        
         loss = self.calculate_loss(rec_image, target_image, mask, mu_target, logvar_target,
                                    betas, source_images, available_contrast_id, is_train=is_train)
 
