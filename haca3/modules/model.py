@@ -597,6 +597,15 @@ class HACA3:
                     theta_target = theta_target.mean(dim=0, keepdim=True)
                     eta_target, eta_target_features = self.eta_encoder(target_image)
                     eta_target = eta_target.mean(dim=0, keepdim=True).view(1, self.eta_dim, 1, 1)
+                    
+                    print("theta_target_features shape:", theta_target_features.shape)
+                    print("eta_target_features shape before:", eta_target_features.shape)
+                    
+                    eta_target_features = F.adaptive_avg_pool2d(
+                        eta_target_features, output_size=theta_target_features.shape[-2:]
+                    )
+                    print("eta_target_features shape after:", eta_target_features.shape)
+
                     thetas_target.append(theta_target)
                     queries.append(
                         torch.cat([theta_target, eta_target], dim=1).view(1, self.theta_dim + self.eta_dim, 1))
