@@ -54,7 +54,7 @@ class HACA3:
             self.eta_encoder.load_state_dict(self.checkpoint['eta_encoder'])
             self.decoder.load_state_dict(self.checkpoint['decoder'])
             self.attention_module.load_state_dict(self.checkpoint['attention_module'])
-            self.spatial_attention_module.load_state_dict(self.checkpoint['spatial_attention_module'])
+            # self.spatial_attention_module.load_state_dict(self.checkpoint['spatial_attention_module'])
             self.patchifier.load_state_dict(self.checkpoint['patchifier'])
         self.beta_encoder.to(self.device)
         self.theta_encoder.to(self.device)
