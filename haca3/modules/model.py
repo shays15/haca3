@@ -101,17 +101,18 @@ class HACA3:
 
     def calculate_theta(self, images):
         if isinstance(images, list):
-            thetas, mus, logvars = [], [], []
+            thetas, mus, logvars, theta_features = [], [], [], []
             for image in images:
-                mu, logvar = self.theta_encoder(image)
+                mu, logvar, theta_feature = self.theta_encoder(image)
                 theta = torch.randn(mu.size()).to(self.device) * torch.sqrt(torch.exp(logvar)) + mu
                 thetas.append(theta)
                 mus.append(mu)
                 logvars.append(logvar)
+                theta_features.append(theta_feature)
         else:
-            mus, logvars = self.theta_encoder(images)
+            mus, logvars, theta_features = self.theta_encoder(images)
             thetas = torch.randn(mus.size()).to(self.device) * torch.sqrt(torch.exp(logvars)) + mus
-        return thetas, mus, logvars
+        return thetas, mus, logvars, theta_features
 
     def calculate_beta(self, images):
         logits, betas = [], []
@@ -124,13 +125,14 @@ class HACA3:
 
     def calculate_eta(self, images):
         if isinstance(images, list):
-            etas = []
+            etas, eta_features = [], []
             for image in images:
-                eta = self.eta_encoder(image)
+                eta, eta_feature = self.eta_encoder(image)
                 etas.append(eta)
+                eta_features.append(eta_feature)
         else:
-            etas = self.eta_encoder(images)
-        return etas
+            etas, eta_features = self.eta_encoder(images)
+        return etas, eta_features
 
     def prepare_source_images(self, image_dicts):
         num_contrasts = len(image_dicts)
@@ -412,12 +414,14 @@ class HACA3:
 
         # ====== 1. INTRA-SITE IMAGE-TO-IMAGE TRANSLATION ======
         logits, betas = self.calculate_beta(source_images)
-        thetas_source, _, _ = self.calculate_theta(source_images)
-        etas_source = self.calculate_eta(source_images)
-        theta_target, mu_target, logvar_target = self.calculate_theta(target_image)
-        eta_target = self.calculate_eta(target_image)
+        thetas_source, _, _, theta_source_features = self.calculate_theta(source_images)
+        etas_source, eta_source_features = self.calculate_eta(source_images)
+        theta_target, mu_target, logvar_target, theta_target_features = self.calculate_theta(target_image)
+        eta_target, eta_target_features = self.calculate_eta(target_image)
         query = torch.cat([theta_target, eta_target], dim=1)
+        query_features = torch.cat([theta_target_features, eta_target_features], dim=1)
         keys = [torch.cat([theta, eta], dim=1) for (theta, eta) in zip(thetas_source, etas_source)]
+        keys_features = [torch.cat([theta_features, eta_features], dim=1) for (theta_feature, eta_feature) in zip(theta_source_features, eta_source_features)]
         if torch.rand((1,)) > 0.2:
             contrast_id_to_drop = contrast_id_for_decoding
         else:
@@ -442,17 +446,19 @@ class HACA3:
             random_index = torch.randperm(batch_size)
             target_image_shuffled = target_image[random_index, ...]
             logits, betas = self.calculate_beta(source_images)
-            thetas_source, _, _ = self.calculate_theta(source_images)
-            etas_source = self.calculate_eta(source_images)
-            theta_target, mu_target, logvar_target = self.calculate_theta(target_image_shuffled)
-            eta_target = self.calculate_eta(target_image_shuffled)
+            thetas_source, _, _, theta_source_features = self.calculate_theta(source_images)
+            etas_source, eta_source_features = self.calculate_eta(source_images)
+            theta_target, mu_target, logvar_target, theta_target_feature = self.calculate_theta(target_image_shuffled)
+            eta_target, eta_target_feature = self.calculate_eta(target_image_shuffled)
             query = torch.cat([theta_target, eta_target], dim=1)
+            query_features = torch.cat([theta_target_feature, eta_target_feature], dim=1)
             keys = [torch.cat([theta, eta], dim=1) for (theta, eta) in zip(thetas_source, etas_source)]
+            keys_features = [torch.cat([theta_feature, eta_feature], dim=1) for (theta_feature, eta_feature) in zip(theta_source_features, eta_source_features)]
             rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
                                                                           available_contrast_id, masks,
                                                                           contrast_dropout=True)
-            theta_recon, _ = self.theta_encoder(rec_image)
-            eta_recon = self.eta_encoder(rec_image)
+            theta_recon, _ , theta_recon_features = self.theta_encoder(rec_image)
+            eta_recon, eta_recon_features = self.eta_encoder(rec_image)
             beta_recon = self.channel_aggregation(reparameterize_logit(self.beta_encoder(rec_image)))
             cycle_loss = self.calculate_cycle_consistency_loss(theta_recon, theta_target.detach(),
                                                                eta_recon, eta_target.detach(),
@@ -549,11 +555,11 @@ class HACA3:
             self.decoder.eval()
 
             # === 1. CALCULATE BETA, THETA, ETA FROM SOURCE IMAGES ===
-            logits, betas, keys, masks = [], [], [], []
+            logits, betas, keys, masks, keys_features = [], [], [], [], []
             for source_image in source_images:
                 source_image = source_image.unsqueeze(1)
                 source_image_batches = divide_into_batches(source_image, num_batches)
-                mask_tmp, logit_tmp, beta_tmp, key_tmp = [], [], [], []
+                mask_tmp, logit_tmp, beta_tmp, key_tmp, key_features_tmp = [], [], [], [], []
                 for source_image_batch in source_image_batches:
                     batch_size = source_image_batch.shape[0]
                     source_image_batch = source_image_batch.to(self.device)
@@ -561,28 +567,35 @@ class HACA3:
                     mask = (source_image_batch > 1e-2) * 1.0
                     logit = self.beta_encoder(source_image_batch)
                     beta = self.channel_aggregation(reparameterize_logit(logit))
-                    theta_source, _ = self.theta_encoder(source_image_batch)
-                    eta_source = self.eta_encoder(source_image_batch).view(batch_size, self.eta_dim, 1, 1)
+                    theta_source, _, theta_source_feature = self.theta_encoder(source_image_batch)
+                    eta_source, eta_source_feature = self.eta_encoder(source_image_batch)
+                    eta_source = eta_source.view(batch_size, self.eta_dim, 1, 1)
                     mask_tmp.append(mask)
                     logit_tmp.append(logit)
                     beta_tmp.append(beta)
                     key_tmp.append(torch.cat([theta_source, eta_source], dim=1))
+                    key_features_tmp.append(torch.cat([theta_source_feature, eta_source_feature], dim=1))
+
                 masks.append(torch.cat(mask_tmp, dim=0))
                 logits.append(torch.cat(logit_tmp, dim=0))
                 betas.append(torch.cat(beta_tmp, dim=0))
                 keys.append(torch.cat(key_tmp, dim=0))
+                keys_features.append(torch.cat(key_tmp, dim=0))
 
             # === 2. CALCULATE THETA, ETA FOR TARGET IMAGES (IF NEEDED) ===
             if target_theta is None:
-                queries, thetas_target = [], []
+                queries, thetas_target, queries_features = [], [], []
                 for target_image in target_images:
                     target_image = target_image.to(self.device).unsqueeze(1)
-                    theta_target, _ = self.theta_encoder(target_image)
+                    theta_target, _ , theta_target_features = self.theta_encoder(target_image)
                     theta_target = theta_target.mean(dim=0, keepdim=True)
-                    eta_target = self.eta_encoder(target_image).mean(dim=0, keepdim=True).view(1, self.eta_dim, 1, 1)
+                    eta_target, eta_target_features = self.eta_encoder(target_image)
+                    eta_target = eta_target.mean(dim=0, keepdim=True).view(1, self.eta_dim, 1, 1)
                     thetas_target.append(theta_target)
                     queries.append(
                         torch.cat([theta_target, eta_target], dim=1).view(1, self.theta_dim + self.eta_dim, 1))
+                    queries_features.append(
+                        torch.cat([theta_target_features, eta_target_features], dim=1))
                 if save_intermediate:
                     # save theta and eta of target images
                     with open(intermediate_out_dir / f'{prefix}_targets.txt', 'w') as fp:
@@ -591,7 +604,7 @@ class HACA3:
                         for i, img_query in enumerate([query.squeeze().cpu().numpy().tolist() for query in queries]):
                             fp.write(','.join([f'target{i}'] + ['%.6f' % val for val in img_query]) + '\n')
             else:
-                queries, thetas_target = [], []
+                queries, thetas_target, queries_features = [], [], []
                 for target_theta_tmp, target_eta_tmp in zip(target_theta, target_eta):
                     thetas_target.append(target_theta_tmp.view(1, self.theta_dim, 1, 1).to(self.device))
                     queries.append(torch.cat([target_theta_tmp.view(1, self.theta_dim, 1).to(self.device),
