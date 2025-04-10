@@ -128,8 +128,13 @@ class EtaEncoder(nn.Module):
             nn.LeakyReLU(0.1),
             nn.Conv2d(32, out_ch, 7, 7, 0))
 
+    # def forward(self, x):
+    #     return self.seq(torch.cat([self.in_conv(x), x], dim=1))
+    
     def forward(self, x):
-        return self.seq(torch.cat([self.in_conv(x), x], dim=1))
+        features = self.in_conv(x)                 # spatial features M_η
+        eta = self.seq(torch.cat([features, x], dim=1))  # global latent
+        return eta, features                       # <-- return both
 
 
 class Patchifier(nn.Module):
