@@ -54,12 +54,14 @@ class HACA3:
             self.eta_encoder.load_state_dict(self.checkpoint['eta_encoder'])
             self.decoder.load_state_dict(self.checkpoint['decoder'])
             self.attention_module.load_state_dict(self.checkpoint['attention_module'])
+            self.spatial_attention_module.load_state_dict(self.checkpoint['spatial_attention_module'])
             self.patchifier.load_state_dict(self.checkpoint['patchifier'])
         self.beta_encoder.to(self.device)
         self.theta_encoder.to(self.device)
         self.eta_encoder.to(self.device)
         self.decoder.to(self.device)
         self.attention_module.to(self.device)
+        self.spatial_attention_module.to(self.device)
         self.patchifier.to(self.device)
         self.start_epoch = 0
 
@@ -76,6 +78,7 @@ class HACA3:
                               list(self.theta_encoder.parameters()) +
                               list(self.decoder.parameters()) +
                               list(self.attention_module.parameters()) +
+                              list(self.spatial_attention_module.parameters()) +
                               list(self.patchifier.parameters()), lr=lr)
         self.scheduler = CyclicLR(self.optimizer, base_lr=4e-4, max_lr=7e-4, cycle_momentum=False)
         if self.checkpoint is not None:
@@ -434,6 +437,7 @@ class HACA3:
                  'eta_encoder': self.eta_encoder.state_dict(),
                  'decoder': self.decoder.state_dict(),
                  'attention_module': self.attention_module.state_dict(),
+                 'spatial_attention_module': self.spatial_attention_module.state_dict(),
                  'patchifier': self.patchifier.state_dict(),
                  'optimizer': self.optimizer.state_dict(),
                  'scheduler': self.scheduler.state_dict()}
@@ -573,6 +577,7 @@ class HACA3:
             self.beta_encoder.train()
             self.decoder.train()
             self.attention_module.train()
+            self.spatial_attention_module.train()
             self.patchifier.train()
             for batch_id, image_dicts in enumerate(self.train_loader):
                 self.image_to_image_translation(batch_id, epoch, image_dicts, train_or_valid='train')
@@ -585,6 +590,7 @@ class HACA3:
             self.decoder.eval()
             self.patchifier.eval()
             self.attention_module.eval()
+            self.spatial_attention_module.eval()
             with torch.set_grad_enabled(False):
                 for batch_id, image_dicts in enumerate(self.valid_loader):
                     self.image_to_image_translation(batch_id, epoch, image_dicts, train_or_valid='valid')
@@ -721,6 +727,7 @@ class HACA3:
 
                     
                     logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
+                    # logit_fusion_tmp, attention_tmp = self.spatial_attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
                     combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
                     masks_cpu = [mask.cpu().numpy() for mask in masks_tmp]
