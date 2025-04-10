@@ -576,6 +576,10 @@ class HACA3:
                     key_tmp.append(torch.cat([theta_source, eta_source], dim=1))
                     print("theta_source_feature shape:", theta_source_feature.shape)
                     print("eta_source_feature shape:", eta_source_feature.shape)
+                    eta_source_feature = F.adaptive_avg_pool2d(
+                        eta_source_feature, output_size=theta_source_feature.shape[-2:]
+                    )
+                    print("eta_source_feature shape after:", eta_source_feature.shape)
                     key_features_tmp.append(torch.cat([theta_source_feature, eta_source_feature], dim=1))
 
                 masks.append(torch.cat(mask_tmp, dim=0))
