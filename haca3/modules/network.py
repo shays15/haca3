@@ -323,4 +323,59 @@ class AttentionModule(nn.Module):
         attention = normalized_attention_map.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
 
         return v, attention
-        
+
+class SpatialAttentionModule(nn.Module):
+    def __init__(self, feature_dim, key_dim=64, v_ch=8):
+        """
+        Spatial attention module using query/key/value mechanism.
+        Args:
+            feature_dim (int): input feature dim (e.g., theta+eta channels)
+            key_dim (int): dimension to project query/key into
+            v_ch (int): number of channels in the value maps (beta channels)
+        """
+        super(SpatialAttentionModule, self).__init__()
+        self.query_net = nn.Conv2d(feature_dim, key_dim, kernel_size=1)
+        self.key_net = nn.Conv2d(feature_dim, key_dim, kernel_size=1)
+        self.softmax = nn.Softmax(dim=1)
+        self.v_ch = v_ch
+
+    def forward(self, q_feats, k_feats_list, beta_list, return_attention=False):
+        """
+        Args:
+            q_feats: (B, C, H, W)
+            k_feats_list: list of (B, C, H, W)
+            beta_list: list of (B, beta_dim, H, W)
+        Returns:
+            beta_fused: (B, beta_dim, H, W)
+            attention_weights: (B, N, H, W)
+        """
+        B, _, H, W = q_feats.shape
+        N = len(k_feats_list)
+
+        # Project q and k
+        q_proj = self.query_net(q_feats)  # (B, key_dim, H, W)
+        k_proj_list = [self.key_net(k) for k in k_feats_list]  # list of (B, key_dim, H, W)
+
+        # Compute attention scores
+        attention_scores = []
+        for k in k_proj_list:
+            attn = torch.sum(q_proj * k, dim=1, keepdim=True)  # (B, 1, H, W)
+            attention_scores.append(attn)
+
+        # Stack and normalize
+        attention_stack = torch.cat(attention_scores, dim=1)  # (B, N, H, W)
+        attention_weights = self.softmax(attention_stack)     # (B, N, H, W)
+
+        # Weighted fusion of beta
+        beta_fused = torch.zeros_like(beta_list[0])
+        for i in range(N):
+            w = attention_weights[:, i:i+1, :, :]  # (B, 1, H, W)
+            if w.shape[-2:] != beta_list[i].shape[-2:]:
+                w = F.interpolate(w, size=beta_list[i].shape[-2:], mode='bilinear', align_corners=False)
+            beta_fused += w * beta_list[i]  # Broadcasted
+
+        if return_attention:
+            return beta_fused, attention_weights
+        else:
+            return beta_fused
+
