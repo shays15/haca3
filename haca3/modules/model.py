@@ -663,7 +663,7 @@ class HACA3:
                 logits.append(torch.cat(logit_tmp, dim=0))
                 betas.append(torch.cat(beta_tmp, dim=0))
                 keys.append(torch.cat(key_tmp, dim=0))
-                keys_features.append(torch.cat(key_tmp, dim=0))
+                keys_features.append(torch.cat(key_features_tmp, dim=0))
 
             # === 2. CALCULATE THETA, ETA FOR TARGET IMAGES (IF NEEDED) ===
             if target_theta is None:
