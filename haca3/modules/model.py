@@ -488,7 +488,7 @@ class HACA3:
         
         rec_image_sp, attention_sp, logit_fusion_sp, beta_fusion_sp = self.decode_spatial(logits, theta_target_features, 
                                                                                           query_features, keys_features, 
-                                                                                          available_contrast_id, mask, 
+                                                                                          available_contrast_id, masks, 
                                                                                           contrast_dropout=contrast_dropout,
                                                                                           contrast_id_to_drop=contrast_id_to_drop)
         
@@ -501,6 +501,12 @@ class HACA3:
                                      f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
                                      '_intra-site.nii.gz')
             save_image(source_images + [rec_image] + [target_image] + betas + [beta_fusion], file_name)
+        
+        if batch_id % 100 == 1:
+            file_name_sp = os.path.join(self.out_dir, f'training_results_{self.timestr}',
+                                     f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
+                                     '_intra-site_sp.nii.gz')
+            save_image(source_images + [rec_image_sp] + [target_image] + betas + [beta_fusion_sp], file_name_sp)
 
         # ====== 3. INTER-SITE IMAGE-TO-IMAGE TRANSLATION ======
         if epoch > 1:
@@ -518,6 +524,12 @@ class HACA3:
             rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
                                                                           available_contrast_id, masks,
                                                                           contrast_dropout=True)
+            rec_image_sp, attention_sp, logit_fusion_sp, beta_fusion_sp = self.decode_spatial(logits, theta_target_feature, 
+                                                                                          query_features, keys_features, 
+                                                                                          available_contrast_id, masks, 
+                                                                                          contrast_dropout=contrast_dropout,
+                                                                                          contrast_id_to_drop=contrast_id_to_drop)
+        
             theta_recon, _ , theta_recon_features = self.theta_encoder(rec_image)
             eta_recon, eta_recon_features = self.eta_encoder(rec_image)
             beta_recon = self.channel_aggregation(reparameterize_logit(self.beta_encoder(rec_image)))
@@ -532,6 +544,11 @@ class HACA3:
                                      f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
                                      '_inter-site.nii.gz')
             save_image(source_images + [rec_image] + [target_image_shuffled] + betas + [beta_fusion], file_name)
+       if epoch > 1 and batch_id % 100 == 1:
+            file_name_sp = os.path.join(self.out_dir, f'training_results_{self.timestr}',
+                                     f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
+                                     '_inter-site_sp.nii.gz')
+            save_image(source_images + [rec_image_sp] + [target_image_shuffled] + betas + [beta_fusion_sp], file_name_sp)
 
         # ====== 5. VISUALIZE LOSSES FOR INTRA- AND INTER-SITE I2I ======
         if epoch > 1:
