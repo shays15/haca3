@@ -759,8 +759,8 @@ class HACA3:
                     print("key_features_tmp[i] should be [B, 128, 6, 6]")
                     print("value_features_tmp[i] should be [B, beta_dim, 224, 224]")
                     print("query_features_tmp:", query_features_tmp.shape)
-                    for i, k in enumerate(key_features_tmp):
-                        print(f"key_features_tmp[{i}]:", k.shape)
+                    for i, ke in enumerate(key_features_tmp):
+                        print(f"key_features_tmp[{i}]:", ke.shape)
                     for i, va in enumerate(value_features_tmp):
                         print(f"value_features_tmp[{i}]:", va.shape)
                     print("---------------------------------")
