@@ -701,6 +701,12 @@ class HACA3:
                     thetas_target.append(target_theta_tmp.view(1, self.theta_dim, 1, 1).to(self.device))
                     queries.append(torch.cat([target_theta_tmp.view(1, self.theta_dim, 1).to(self.device),
                                               target_eta_tmp.view(1, self.eta_dim, 1).to(self.device)], dim=1))
+            # DEBUGGING MORE
+            print("Addition debugging...")
+            print(f"shape of queries: {queries.shape}"
+            print(f"shape of thetas_target: {thetas_target.shape}"
+            print(f"shape of queries_features: {queries_features.shape}"
+            
 
             # === 3. SAVE ENCODED VARIABLES (IF REQUESTED) ===
             if save_intermediate and header is not None:
@@ -747,7 +753,7 @@ class HACA3:
                     # 1. Get query_features_tmp
                     print("---- SPATIAL ATTENTION DEBUG ----")
                     print(f"query_feature size: {query_feature.shape}")
-                    query_feature = query_features[tid]  # shape: [1, 128, 6, 6]
+                    query_feature = query_feature[tid]  # shape: [1, 128, 6, 6]
                     print(f"query_feature[tid] size: {query_feature.shape}")
 
                     query_features_tmp = query_feature.repeat(batch_size, 1, 1, 1)
