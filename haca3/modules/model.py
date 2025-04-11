@@ -762,7 +762,7 @@ class HACA3:
                     print(f"query_feature[tid] size: {query_feature_tid.shape}")
                     print(f"query_feature_unseq size: {query_feature_unseq.shape}")
 
-                    query_features_tmp = query_feature.repeat(batch_size, 1, 1, 1)
+                    query_features_tmp = query_feature_unseq.repeat(batch_size, 1, 1, 1)
                     print(f"query_features_tmp size: {query_features_tmp.shape}")
 
                     # 2. Get key_features_tmp and value_features_tmp for this batch
