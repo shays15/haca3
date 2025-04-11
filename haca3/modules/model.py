@@ -754,7 +754,17 @@ class HACA3:
                     #expanded_mask = masks_tmp[0].unsqueeze(1)
                     #expanded_mask = masks_tmp.expand(-1, attention.size(1), -1, -1, -1).squeeze(2)
 
-                    
+                    print("---- SPATIAL ATTENTION DEBUG ----")
+                    print("query_features_tmp should be [B, 128, 6, 6]")
+                    print("key_features_tmp[i] should be [B, 128, 6, 6]")
+                    print("value_features_tmp[i] should be [B, beta_dim, 224, 224]")
+                    print("query_features_tmp:", query_features_tmp.shape)
+                    for i, k in enumerate(key_features_tmp):
+                        print(f"key_features_tmp[{i}]:", k.shape)
+                    for i, v in enumerate(value_features_tmp):
+                        print(f"value_features_tmp[{i}]:", v.shape)
+                    print("---------------------------------")
+
                     logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
                     logit_fusion_sp_tmp, attention_sp_tmp = self.spatial_attention_module(
                         query_features_tmp, key_features_tmp, value_features_tmp, return_attention=True)
