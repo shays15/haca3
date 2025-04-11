@@ -249,9 +249,9 @@ class AttentionModule(nn.Module):
         batch_size, feature_dim_q, num_q_patches = q.shape
         _, feature_dim_k, _, num_contrasts = k.shape
         num_v_patches = v.shape[2]
-        # assert (
-        #         feature_dim_k == feature_dim_q or feature_dim_q == self.feature_dim
-        # ), 'Feature dimensions do not match.'
+        assert (
+                feature_dim_k == feature_dim_q or feature_dim_q == self.feature_dim
+        ), 'Feature dimensions do not match.'
 
         # q.shape: (batch_size, num_q_patches=1, 1, feature_dim_q)
         q = q.reshape(batch_size, feature_dim_q, num_q_patches, 1).permute(0, 2, 3, 1)
