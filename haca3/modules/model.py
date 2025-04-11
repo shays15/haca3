@@ -798,6 +798,21 @@ class HACA3:
                         img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96], None, header)
                         file_name = intermediate_out_dir / f'{out_prefix}_attention.nii.gz'
                         nib.save(img_save, file_name)
+                    # 5d. spatial attention
+                    if recon_orientation == 'axial':
+                        # spatial attention shape: [B, N, H, W]
+                        # match your current permutation strategy
+                        attn_save = attention_sp.permute(2, 3, 0, 1)  # (H, W, B, N)
+                        attn_save = attn_save.permute(1, 0, 2, 3)  # (W, H, B, N) to match your existing pattern
+                    
+                        # optional: crop to center 192×192 (assuming H=W=224)
+                        attn_save = attn_save[112 - 96:112 + 96, :, 112 - 96:112 + 96]  # (96x2, H, B, N)
+                    
+                        # convert to NIfTI
+                        img_save = nib.Nifti1Image(attn_save.cpu().numpy(), None, header)
+                        file_name = intermediate_out_dir / f'{out_prefix}_spatial_attention.nii.gz'
+                        nib.save(img_save, file_name)
+                        
                     # # 5d. attention_map
                     # if recon_orientation == 'axial' and attention_map != []:
                     #     img_save = attention_map.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
