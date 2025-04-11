@@ -40,7 +40,7 @@ class HACA3:
         self.theta_encoder = ThetaEncoder(in_ch=1, out_ch=self.theta_dim)
         self.eta_encoder = EtaEncoder(in_ch=1, out_ch=self.eta_dim)
         self.attention_module = AttentionModule(self.theta_dim + self.eta_dim, v_ch=self.beta_dim)
-        self.spatial_attention_module = SpatialAttentionModule(self.theta_dim + self.eta_dim, v_ch=self.beta_dim)
+        self.spatial_attention_module = SpatialAttentionModule(feature_dim=128, v_ch=self.beta_dim)
         self.decoder = UNet(in_ch=1 + self.theta_dim, out_ch=1, base_ch=16, final_act='relu')
         self.patchifier = Patchifier(in_ch=1, out_ch=128)
 
