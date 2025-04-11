@@ -759,7 +759,6 @@ class HACA3:
                     print(f"query_feature[tid] size: {query_feature.shape}")
 
                     query_features_tmp = query_feature.repeat(batch_size, 1, 1, 1)
-                    query_features_tmp_1 = query_feature.expand(batch_size, -1, -1, -1)
                     
                     # 2. Get key_features_tmp and value_features_tmp for this batch
                     key_features_tmp = [divide_into_batches(kf, num_batches)[batch_id] for kf in keys_features]
@@ -773,12 +772,10 @@ class HACA3:
                     print("key_features_tmp[i] should be [B, 128, 6, 6]")
                     print("value_features_tmp[i] should be [B, beta_dim, 224, 224]")
                     print("query_features_tmp:", query_features_tmp.shape)
-                    print("query_features_tmp_1:", query_features_tmp_1.shape)
                     for i, ke in enumerate(key_features_tmp):
                         print(f"key_features_tmp[{i}]:", ke.shape)
                     for i, va in enumerate(value_features_tmp):
                         print(f"value_features_tmp[{i}]:", va.shape)
-                    print("query_features_tmp_1:", query_features_tmp_1.shape)
                     print("---------------------------------")
 
                     logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
