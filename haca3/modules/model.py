@@ -703,9 +703,9 @@ class HACA3:
                                               target_eta_tmp.view(1, self.eta_dim, 1).to(self.device)], dim=1))
             # DEBUGGING MORE
             print("Addition debugging...")
-            print(f"shape of queries: {queries.shape}"
-            print(f"shape of thetas_target: {thetas_target.shape}"
-            print(f"shape of queries_features: {queries_features.shape}"
+            print(f"shape of queries: {queries.shape}")
+            print(f"shape of thetas_target: {thetas_target.shape}")
+            print(f"shape of queries_features: {queries_features.shape}")
             
 
             # === 3. SAVE ENCODED VARIABLES (IF REQUESTED) ===
