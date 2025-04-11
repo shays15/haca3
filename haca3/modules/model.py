@@ -754,9 +754,9 @@ class HACA3:
                     
                     # 1. Get query_features_tmp
                     print("---- SPATIAL ATTENTION DEBUG ----")
-                    print(f"query_feature size: {query_feature.shape}")
-                    query_feature = query_feature[tid]  # shape: [1, 128, 6, 6]
-                    print(f"query_feature[tid] size: {query_feature.shape}")
+                    print(f"query_feature size: {query_feature.shape}") #128,6,6
+                    # query_feature = query_feature[tid]  # shape: [1, 128, 6, 6]
+                    # print(f"query_feature[tid] size: {query_feature.shape}")
 
                     query_features_tmp = query_feature.repeat(batch_size, 1, 1, 1)
                     
