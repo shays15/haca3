@@ -761,8 +761,8 @@ class HACA3:
                     print("query_features_tmp:", query_features_tmp.shape)
                     for i, k in enumerate(key_features_tmp):
                         print(f"key_features_tmp[{i}]:", k.shape)
-                    for i, v in enumerate(value_features_tmp):
-                        print(f"value_features_tmp[{i}]:", v.shape)
+                    for i, va in enumerate(value_features_tmp):
+                        print(f"value_features_tmp[{i}]:", va.shape)
                     print("---------------------------------")
 
                     logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
