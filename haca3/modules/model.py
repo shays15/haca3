@@ -757,7 +757,7 @@ class HACA3:
                     print("---- SPATIAL ATTENTION DEBUG ----")
                     print(f"query_feature size: {query_feature.shape}") # want 128,6,6
                     query_feature_tid = query_feature[tid]  # want shape: [1, 128, 6, 6]
-                    query_feature_unseq = query_feature.unsqueeze(0)
+                    query_feature_unseq = query_feature_tid.unsqueeze(0)
                     
                     print(f"query_feature[tid] size: {query_feature_tid.shape}")
                     print(f"query_feature_unseq size: {query_feature_unseq.shape}")
