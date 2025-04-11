@@ -739,6 +739,7 @@ class HACA3:
 
             # ===4. DECODING===
             for tid, (theta_target, query, norm_val, query_feature) in enumerate(zip(thetas_target, queries, norm_vals, queries_features)):
+                print(f"Decoding - Query Feature: {query_feature.shape}")
                 if out_paths is not None:
                     out_prefix = out_paths[tid].name.replace('.nii.gz', '')
                 rec_image, beta_fusion, logit_fusion, attention = [], [], [], []
@@ -754,12 +755,16 @@ class HACA3:
                     
                     # 1. Get query_features_tmp
                     print("---- SPATIAL ATTENTION DEBUG ----")
-                    print(f"query_feature size: {query_feature.shape}") #128,6,6
-                    # query_feature = query_feature[tid]  # shape: [1, 128, 6, 6]
-                    # print(f"query_feature[tid] size: {query_feature.shape}")
+                    print(f"query_feature size: {query_feature.shape}") # want 128,6,6
+                    query_feature_tid = query_feature[tid]  # want shape: [1, 128, 6, 6]
+                    query_feature_unseq = query_feature.unsqueeze(0)
+                    
+                    print(f"query_feature[tid] size: {query_feature_tid.shape}")
+                    print(f"query_feature_unseq size: {query_feature_unseq.shape}")
 
                     query_features_tmp = query_feature.repeat(batch_size, 1, 1, 1)
-                    
+                    print(f"query_features_tmp size: {query_features_tmp.shape}")
+
                     # 2. Get key_features_tmp and value_features_tmp for this batch
                     key_features_tmp = [divide_into_batches(kf, num_batches)[batch_id] for kf in keys_features]
                     value_features_tmp = [divide_into_batches(bt, num_batches)[batch_id] for bt in logits]
@@ -771,7 +776,7 @@ class HACA3:
                     print("query_features_tmp should be [B, 128, 6, 6]")
                     print("key_features_tmp[i] should be [B, 128, 6, 6]")
                     print("value_features_tmp[i] should be [B, beta_dim, 224, 224]")
-                    print("query_features_tmp:", query_features_tmp.shape)
+                    print("query_features_tmp:", query_features_tmp.shape) # 1120, 128, 6, 6
                     for i, ke in enumerate(key_features_tmp):
                         print(f"key_features_tmp[{i}]:", ke.shape)
                     for i, va in enumerate(value_features_tmp):
