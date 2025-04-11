@@ -501,8 +501,6 @@ class HACA3:
                                      f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
                                      '_intra-site.nii.gz')
             save_image(source_images + [rec_image] + [target_image] + betas + [beta_fusion], file_name)
-        
-        if batch_id % 100 == 1:
             file_name_sp = os.path.join(self.out_dir, f'training_results_{self.timestr}',
                                      f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
                                      '_intra-site_sp.nii.gz')
@@ -544,7 +542,6 @@ class HACA3:
                                      f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
                                      '_inter-site.nii.gz')
             save_image(source_images + [rec_image] + [target_image_shuffled] + betas + [beta_fusion], file_name)
-       if epoch > 1 and batch_id % 100 == 1:
             file_name_sp = os.path.join(self.out_dir, f'training_results_{self.timestr}',
                                      f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
                                      '_inter-site_sp.nii.gz')
