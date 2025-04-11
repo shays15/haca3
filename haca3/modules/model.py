@@ -730,10 +730,11 @@ class HACA3:
                                                   ['%.6f' % val for val in slice_key]) + '\n')
 
             # ===4. DECODING===
-            for tid, (theta_target, query, norm_val) in enumerate(zip(thetas_target, queries, norm_vals)):
+            for tid, (theta_target, query, norm_val, query_feature) in enumerate(zip(thetas_target, queries, norm_vals, queries_features)):
                 if out_paths is not None:
                     out_prefix = out_paths[tid].name.replace('.nii.gz', '')
                 rec_image, beta_fusion, logit_fusion, attention = [], [], [], []
+                logit_fusion_sp, attention_sp = [], []
                 for batch_id in range(num_batches):
                     keys_tmp = [divide_into_batches(ks, num_batches)[batch_id] for ks in keys]
                     logits_tmp = [divide_into_batches(ls, num_batches)[batch_id] for ls in logits]
@@ -743,12 +744,21 @@ class HACA3:
                     k = torch.cat(keys_tmp, dim=-1).view(batch_size, self.theta_dim + self.eta_dim, 1, len(source_images))
                     v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images))
                     
+                    # 1. Get query_features_tmp
+                    query_features_tmp = query_feature.repeat(batch_size, 1, 1, 1)
+                    
+                    # 2. Get key_features_tmp and value_features_tmp for this batch
+                    key_features_tmp = [divide_into_batches(kf, num_batches)[batch_id] for kf in keys_features]
+                    value_features_tmp = [divide_into_batches(bt, num_batches)[batch_id] for bt in logits]
+                    
                     #expanded_mask = masks_tmp[0].unsqueeze(1)
                     #expanded_mask = masks_tmp.expand(-1, attention.size(1), -1, -1, -1).squeeze(2)
 
                     
                     logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
-                    # logit_fusion_tmp, attention_tmp = self.spatial_attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
+                    logit_fusion_sp_tmp, attention_sp_tmp = self.spatial_attention_module(
+                        query_features_tmp, key_features_tmp, value_features_tmp, return_attention=True)
+
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
                     combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
                     masks_cpu = [mask.cpu().numpy() for mask in masks_tmp]
@@ -759,11 +769,15 @@ class HACA3:
                     beta_fusion.append(beta_fusion_tmp)
                     logit_fusion.append(logit_fusion_tmp)
                     attention.append(attention_tmp)
+                    logit_fusion_sp.append(logit_fusion_sp_tmp)
+                    attention_sp.append(attention_sp_tmp)
 
                 rec_image = torch.cat(rec_image, dim=0)
                 beta_fusion = torch.cat(beta_fusion, dim=0)
                 logit_fusion = torch.cat(logit_fusion, dim=0)
                 attention = torch.cat(attention, dim=0)
+                logit_fusion_sp.cat(logit_fusion_sp, dim=0)
+                attention_sp = torch.cat(attention_sp, dim=0)
 
                 # ===5. SAVE INTERMEDIATE RESULTS (IF REQUESTED)===
                 # harmonized image
@@ -791,6 +805,12 @@ class HACA3:
                         img_save = logit_fusion.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
                         img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96, :], None, header)
                         file_name = intermediate_out_dir / f'{out_prefix}_logit_fusion.nii.gz'
+                        nib.save(img_save, file_name)
+                    # 5b. logit fusion sp
+                    if recon_orientation == 'axial':
+                        img_save = logit_fusion_sp.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
+                        img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96, :], None, header)
+                        file_name = intermediate_out_dir / f'{out_prefix}_logit_fusion_sp.nii.gz'
                         nib.save(img_save, file_name)
                     # 5c. attention
                     if recon_orientation == 'axial':
