@@ -738,7 +738,7 @@ class HACA3:
                                                   ['%.6f' % val for val in slice_key]) + '\n')
 
             # ===4. DECODING===
-            print(f"Decoding - Query Features: {query_features.shape}")
+            print(f"Decoding - Query Features: {queries_features.shape}")
             for tid, (theta_target, query, norm_val, query_feature) in enumerate(zip(thetas_target, queries, norm_vals, queries_features)):
                 print(f"Decoding - Query Feature: {query_feature.shape}")
                 if out_paths is not None:
