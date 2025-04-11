@@ -804,7 +804,7 @@ class HACA3:
                 beta_fusion = torch.cat(beta_fusion, dim=0)
                 logit_fusion = torch.cat(logit_fusion, dim=0)
                 attention = torch.cat(attention, dim=0)
-                logit_fusion_sp.cat(logit_fusion_sp, dim=0)
+                logit_fusion_sp = torch.cat(logit_fusion_sp, dim=0)
                 attention_sp = torch.cat(attention_sp, dim=0)
 
                 # ===5. SAVE INTERMEDIATE RESULTS (IF REQUESTED)===
