@@ -819,6 +819,8 @@ class HACA3:
                     keys_tmp = [divide_into_batches(ks, num_batches)[batch_id] for ks in keys]
                     logits_tmp = [divide_into_batches(ls, num_batches)[batch_id] for ls in logits]
                     masks_tmp = [divide_into_batches(ms, num_batches)[batch_id] for ms in masks]
+                    # Reshape masks_tmp for the attention module
+                    masks_tmp = torch.stack(masks_tmp, dim=1).to(self.device)
                     batch_size = keys_tmp[0].shape[0]
                     query_tmp = query.view(1, self.theta_dim + self.eta_dim, 1).repeat(batch_size, 1, 1)
                     k = torch.cat(keys_tmp, dim=-1).view(batch_size, self.theta_dim + self.eta_dim, 1, len(source_images))
