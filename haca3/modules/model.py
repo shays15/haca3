@@ -286,6 +286,7 @@ class HACA3:
             List of concatenated spatial features for each contrast (theta+eta).
         * available_contrast_id: torch.Tensor (B, num_contrasts)
             Indicates which contrasts are available. 1: available, 0: missing.
+        * mask: background mask
         * contrast_dropout: bool
             If True, randomly drops one available contrast during training.
         * contrast_id_to_drop: int or None
@@ -312,7 +313,7 @@ class HACA3:
 
         # Spatial attention fusion
         logit_fusion, attention = self.spatial_attention_module(
-            query_features, keys, values, modality_dropout=modality_dropout, return_attention=True
+            query_features, keys, values, mask, modality_dropout=modality_dropout, return_attention=True
         )
         beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
         if target_theta_feature.shape[-2:] != beta_fusion.shape[-2:]:
