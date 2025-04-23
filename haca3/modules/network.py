@@ -340,12 +340,14 @@ class SpatialAttentionModule(nn.Module):
         self.softmax = nn.Softmax(dim=1)
         self.v_ch = v_ch
 
-    def forward(self, q_feats, k_feats_list, beta_list, return_attention=False):
+    def forward(self, q_feats, k_feats_list, beta_list, modality_dropout=None, return_attention=False):
         """
         Args:
             q_feats: (B, C, H, W)
             k_feats_list: list of (B, C, H, W)
             beta_list: list of (B, beta_dim, H, W)
+            modality_dropout: (B, N) with 1 = dropped out, 0 = keep
+
         Returns:
             beta_fused: (B, beta_dim, H, W)
             attention_weights: (B, N, H, W)
@@ -365,6 +367,13 @@ class SpatialAttentionModule(nn.Module):
 
         # Stack and normalize
         attention_stack = torch.cat(attention_scores, dim=1)  # (B, N, H, W)
+        
+        # === Apply modality dropout ===
+        if modality_dropout is not None:
+            # modality_dropout shape: [B, N] → [B, N, 1, 1] for broadcasting
+            modality_dropout_mask = modality_dropout.view(B, N, 1, 1)
+            attention_stack = attention_stack - (modality_dropout_mask * 1e5)
+
         attention_weights = self.softmax(attention_stack)     # (B, N, H, W)
         print(f"[DEBUG] spatial attention_weights shape: {attention_weights.shape}")
 
