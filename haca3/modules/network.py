@@ -340,12 +340,13 @@ class SpatialAttentionModule(nn.Module):
         self.softmax = nn.Softmax(dim=1)
         self.v_ch = v_ch
 
-    def forward(self, q_feats, k_feats_list, beta_list, modality_dropout=None, return_attention=False):
+    def forward(self, q_feats, k_feats_list, beta_list, mask, modality_dropout=None, return_attention=False):
         """
         Args:
             q_feats: (B, C, H, W)
             k_feats_list: list of (B, C, H, W)
             beta_list: list of (B, beta_dim, H, W)
+            mask: 
             modality_dropout: (B, N) with 1 = dropped out, 0 = keep
 
         Returns:
@@ -377,18 +378,32 @@ class SpatialAttentionModule(nn.Module):
         attention_weights = self.softmax(attention_stack)     # (B, N, H, W)
         # print(f"[DEBUG] spatial attention_weights shape: {attention_weights.shape}")
 
+        # === Apply brain region mask ===
+        if mask is not None:
+            if isinstance(mask, list):
+                mask = torch.stack(mask)
+            if len(mask.shape) == 5:  # e.g., (B, 1, H, W, N) → permute to (B, N, H, W)
+                mask = mask.squeeze(1).permute(0, 4, 2, 3)
+            elif len(mask.shape) == 4 and mask.shape[1] != N:
+                # handle case: (B, 1, H, W) to (B, N, H, W)
+                mask = mask.repeat(1, N, 1, 1)
+            upsampled_attention = F.interpolate(attention_weights, size=beta_list[0].shape[-2:], mode='bilinear', align_corners=False)
+            masked_attention = upsampled_attention * mask
+        
+        normalize_attention_weights = normalize_attention(masked_attention)
+
         # Weighted fusion of beta
         beta_fused = torch.zeros_like(beta_list[0])
         for i in range(N):
-            w = attention_weights[:, i:i+1, :, :]  # (B, 1, H, W)
-            if w.shape[-2:] != beta_list[i].shape[-2:]:
-                w = F.interpolate(w, size=beta_list[i].shape[-2:], mode='bilinear', align_corners=False)
+            w = normalize_attention_weights[:, i:i+1, :, :]  # (B, 1, H, W)
+            # if w.shape[-2:] != beta_list[i].shape[-2:]:
+            #     w = F.interpolate(w, size=beta_list[i].shape[-2:], mode='bilinear', align_corners=False)
             beta_fused += w * beta_list[i]  # Broadcasted
         # print(f"[DEBUG] beta_fused shape: {beta_fused.shape}")
         if return_attention:
-            upsampled_attention = F.interpolate(attention_weights, size=beta_list[0].shape[-2:], mode='bilinear', align_corners=False)
+            # upsampled_attention = F.interpolate(attention_weights, size=beta_list[0].shape[-2:], mode='bilinear', align_corners=False)
             # print(f"[DEBUG] spatial upsampled_attention shape: {upsampled_attention.shape}")
-            return beta_fused, upsampled_attention
+            return beta_fused, normalize_attention_weights
         else:
             return beta_fused
 
