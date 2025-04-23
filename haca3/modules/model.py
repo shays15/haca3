@@ -822,7 +822,10 @@ class HACA3:
                     query_tmp = query.view(1, self.theta_dim + self.eta_dim, 1).repeat(batch_size, 1, 1)
                     k = torch.cat(keys_tmp, dim=-1).view(batch_size, self.theta_dim + self.eta_dim, 1, len(source_images))
                     v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images))
-                    
+
+                    theta_target_feature_tmp = theta_target_feature[tid]  # [1, theta_dim, H, W]
+                    theta_target_feature_tmp = theta_target_feature_tmp.repeat(batch_size, 1, 1, 1)
+
                     # 1. Get query_features_tmp
                     # print("---- SPATIAL ATTENTION DEBUG ----")
                     # print(f"query_feature size: {query_feature.shape}") # want 128,6,6
@@ -857,7 +860,7 @@ class HACA3:
 
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
                     # combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
-                    combined_map = torch.cat([beta_fusion_tmp, theta_target_feature], dim=1)
+                    combined_map = torch.cat([beta_fusion_tmp, theta_target_feature_tmp], dim=1)
                     masks_cpu = [mask.cpu().numpy() for mask in masks_tmp]
                     union_mask = np.logical_or.reduce(masks_cpu)
                     union_mask = torch.from_numpy(union_mask).to(masks_tmp[0].device)
