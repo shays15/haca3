@@ -382,13 +382,14 @@ class SpatialAttentionModule(nn.Module):
         if mask is not None:
             if isinstance(mask, list):
                 mask = torch.stack(mask)
-                print("=== DEBUG MASK ===")
-                print(f"mask shape after stack: {mask.shape}")
-                print(f"mask dtype: {mask.dtype}")
-                print("===================")
-                mask = mask.permute(1, 0, 2, 3, 4).squeeze(2)
-                print("=== POST-PROCESS MASK ===")
-                print(f"mask shape after permute + squeeze: {mask.shape}")  # should be [B, N, H, W]
+            
+            print("=== DEBUG MASK ===")
+            print(f"mask shape after stack: {mask.shape}")
+            print(f"mask dtype: {mask.dtype}")
+            print("===================")
+            mask = mask.permute(1, 0, 2, 3, 4).squeeze(2)
+            print("=== POST-PROCESS MASK ===")
+            print(f"mask shape after permute + squeeze: {mask.shape}")  # should be [B, N, H, W]
 
             upsampled_attention = F.interpolate(attention_weights, size=beta_list[0].shape[-2:], mode='bilinear', align_corners=False)
             print(f"spatial upsampled_attention shape: {upsampled_attention.shape}")
