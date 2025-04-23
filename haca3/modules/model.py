@@ -485,6 +485,9 @@ class HACA3:
         logits, betas = self.calculate_beta(source_images)
         thetas_source, _, _, theta_source_features = self.calculate_theta(source_images)
         etas_source, eta_source_features = self.calculate_eta(source_images)
+        eta_source_features = F.adaptive_avg_pool2d(
+                        eta_source_features, output_size=theta_source_features.shape[-2:]
+                    )
         theta_target, mu_target, logvar_target, theta_target_features = self.calculate_theta(target_image)
         eta_target, eta_target_features = self.calculate_eta(target_image)
         query = torch.cat([theta_target, eta_target], dim=1)
