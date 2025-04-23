@@ -857,7 +857,7 @@ class HACA3:
 
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
                     # combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
-                    combined_map = torch.cat([beta_fusion_tmp, theta_target_feature, dim=1)
+                    combined_map = torch.cat([beta_fusion_tmp, theta_target_feature], dim=1)
                     masks_cpu = [mask.cpu().numpy() for mask in masks_tmp]
                     union_mask = np.logical_or.reduce(masks_cpu)
                     union_mask = torch.from_numpy(union_mask).to(masks_tmp[0].device)
