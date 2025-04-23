@@ -850,6 +850,7 @@ class HACA3:
                     if recon_orientation == 'axial':
                         # spatial attention shape: [B, N, H, W]
                         # match your current permutation strategy
+                        print("-----SAVING SP ATTENTION------")
                         print("attention_sp shape before permute:", attention_sp.shape)
                         attn_save = attention_sp.permute(2, 3, 0, 1)  # (H, W, B, N)
                         print("attention_sp shape after 1 permute:", attn_save.shape)
