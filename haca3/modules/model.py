@@ -514,6 +514,21 @@ class HACA3:
         #                                                               masks,
         #                                                               contrast_dropout=contrast_dropout,
         #                                                               contrast_id_to_drop=contrast_id_to_drop)
+        print("========== DEBUGGING INPUTS TO decode_spatial ==========")
+        print(f"[thetas_source]     len: {len(thetas_source)}   shapes: {[t.shape for t in thetas_source]}")
+        print(f"[etas_source]       len: {len(etas_source)}     shapes: {[e.shape for e in etas_source]}")
+        print(f"[theta_source_feat] len: {len(theta_source_features)} shapes: {[t.shape for t in theta_source_features]}")
+        print(f"[eta_source_feat]   len: {len(eta_source_features)}   shapes: {[e.shape for e in eta_source_features]}")
+        print(f"[theta_target]      shape: {theta_target.shape}")
+        print(f"[eta_target]        shape: {eta_target.shape}")
+        print(f"[theta_target_feat] shape: {theta_target_features.shape}")
+        print(f"[eta_target_feat]   shape: {eta_target_features.shape}")
+        print(f"[query]             shape: {query.shape}")
+        print(f"[query_features]    shape: {query_features.shape}")
+        print(f"[keys]              len: {len(keys)}   shapes: {[k.shape for k in keys]}")
+        print(f"[keys_features]     len: {len(keys_features)} shapes: {[k.shape for k in keys_features]}")
+        print("=========================================================")
+
         rec_image, attention, logit_fusion, beta_fusion = self.decode_spatial(logits, theta_target_features, 
                                                                                           query_features, keys_features, 
                                                                                           available_contrast_id, masks, 
