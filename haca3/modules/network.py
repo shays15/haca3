@@ -377,7 +377,9 @@ class SpatialAttentionModule(nn.Module):
             beta_fused += w * beta_list[i]  # Broadcasted
         print(f"[DEBUG] beta_fused shape: {beta_fused.shape}")
         if return_attention:
-            return beta_fused, attention_weights
+            upsampled_attention = F.interpolate(attention_weights, size=beta_list[0].shape[-2:], mode='bilinear', align_corners=False)
+            print(f"[DEBUG] spatial upsampled_attention shape: {upsampled_attention.shape}")
+            return beta_fused, upsampled_attention
         else:
             return beta_fused
 
