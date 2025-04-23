@@ -493,9 +493,10 @@ class HACA3:
         logits, betas = self.calculate_beta(source_images)
         thetas_source, _, _, theta_source_features = self.calculate_theta(source_images)
         etas_source, eta_source_features = self.calculate_eta(source_images)
-        eta_source_features = F.adaptive_avg_pool2d(
-                        eta_source_features, output_size=theta_source_features.shape[-2:]
-                    )
+        eta_source_features = [F.adaptive_avg_pool2d(
+                        eta_f, output_size=theta_f.shape[-2:])
+                               for eta_f, theta_f in zip(eta_source_features, theta_source_features)]
+
         theta_target, mu_target, logvar_target, theta_target_features = self.calculate_theta(target_image)
         eta_target, eta_target_features = self.calculate_eta(target_image)
         query = torch.cat([theta_target, eta_target], dim=1)
@@ -561,6 +562,10 @@ class HACA3:
             logits, betas = self.calculate_beta(source_images)
             thetas_source, _, _, theta_source_features = self.calculate_theta(source_images)
             etas_source, eta_source_features = self.calculate_eta(source_images)
+            eta_source_features = [
+                F.adaptive_avg_pool2d(eta_f, output_size=theta_f.shape[-2:])
+                for eta_f, theta_f in zip(eta_source_features, theta_source_features)
+            ]
             theta_target, mu_target, logvar_target, theta_target_feature = self.calculate_theta(target_image_shuffled)
             eta_target, eta_target_feature = self.calculate_eta(target_image_shuffled)
             eta_target_feature = F.adaptive_avg_pool2d(
