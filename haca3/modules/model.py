@@ -493,7 +493,7 @@ class HACA3:
                     )
         query_features = torch.cat([theta_target_features, eta_target_features], dim=1)
         keys = [torch.cat([theta, eta], dim=1) for (theta, eta) in zip(thetas_source, etas_source)]
-        keys_features = [torch.cat([theta_features, eta_features], dim=1) for (theta_feature, eta_feature) in zip(theta_source_features, eta_source_features)]
+        keys_features = [torch.cat([theta_feature, eta_feature], dim=1) for (theta_feature, eta_feature) in zip(theta_source_features, eta_source_features)]
         if torch.rand((1,)) > 0.2:
             contrast_id_to_drop = contrast_id_for_decoding
         else:
