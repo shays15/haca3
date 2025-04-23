@@ -303,15 +303,15 @@ class HACA3:
 
         if contrast_dropout:
             available_contrast_id = dropout_contrasts(available_contrast_id, contrast_id_to_drop)
-        keys=[]
-        values=[]
-        for i in range(len(keys_feature_list)):
-            mask_i = available_contrast_id[:, i].view(-1, 1, 1, 1)
-            keys.append(keys_feature_list[i] * mask_i)
-            values.append(logits[i] * mask_i)
+        modality_dropout = 1 - available_contrast_id
+       
+        # === Step 2: Prepare keys and values ===
+        keys = keys_feature_list        # List of (B, C, H, W)
+        values = logits                 # List of (B, beta_dim, H, W)
+
         # Spatial attention fusion
         logit_fusion, attention = self.spatial_attention_module(
-            query_features, keys, values, return_attention=True
+            query_features, keys, values, modality_dropout=modality_dropout, return_attention=True
         )
         beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
         combined_map = torch.cat([beta_fusion, target_theta_feature], dim=1)
