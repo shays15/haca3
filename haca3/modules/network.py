@@ -321,6 +321,7 @@ class AttentionModule(nn.Module):
         v = normalized_attention_map.view(batch_size, num_v_patches, 1, num_contrasts) @ v
         v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
         attention = normalized_attention_map.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
+        print(f"[DEBUG] attention_weights shape: {attention.shape}")
 
         return v, attention
 
@@ -365,6 +366,7 @@ class SpatialAttentionModule(nn.Module):
         # Stack and normalize
         attention_stack = torch.cat(attention_scores, dim=1)  # (B, N, H, W)
         attention_weights = self.softmax(attention_stack)     # (B, N, H, W)
+        print(f"[DEBUG] spatial attention_weights shape: {attention_weights.shape}")
 
         # Weighted fusion of beta
         beta_fused = torch.zeros_like(beta_list[0])
@@ -373,7 +375,7 @@ class SpatialAttentionModule(nn.Module):
             if w.shape[-2:] != beta_list[i].shape[-2:]:
                 w = F.interpolate(w, size=beta_list[i].shape[-2:], mode='bilinear', align_corners=False)
             beta_fused += w * beta_list[i]  # Broadcasted
-
+            
         if return_attention:
             return beta_fused, attention_weights
         else:
