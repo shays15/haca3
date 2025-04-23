@@ -321,7 +321,7 @@ class AttentionModule(nn.Module):
         v = normalized_attention_map.view(batch_size, num_v_patches, 1, num_contrasts) @ v
         v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
         attention = normalized_attention_map.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
-        print(f"[DEBUG] attention_weights shape: {attention.shape}")
+        # print(f"[DEBUG] attention_weights shape: {attention.shape}")
 
         return v, attention
 
@@ -375,7 +375,7 @@ class SpatialAttentionModule(nn.Module):
             attention_stack = attention_stack - (modality_dropout_mask * 1e5)
 
         attention_weights = self.softmax(attention_stack)     # (B, N, H, W)
-        print(f"[DEBUG] spatial attention_weights shape: {attention_weights.shape}")
+        # print(f"[DEBUG] spatial attention_weights shape: {attention_weights.shape}")
 
         # Weighted fusion of beta
         beta_fused = torch.zeros_like(beta_list[0])
@@ -384,10 +384,10 @@ class SpatialAttentionModule(nn.Module):
             if w.shape[-2:] != beta_list[i].shape[-2:]:
                 w = F.interpolate(w, size=beta_list[i].shape[-2:], mode='bilinear', align_corners=False)
             beta_fused += w * beta_list[i]  # Broadcasted
-        print(f"[DEBUG] beta_fused shape: {beta_fused.shape}")
+        # print(f"[DEBUG] beta_fused shape: {beta_fused.shape}")
         if return_attention:
             upsampled_attention = F.interpolate(attention_weights, size=beta_list[0].shape[-2:], mode='bilinear', align_corners=False)
-            print(f"[DEBUG] spatial upsampled_attention shape: {upsampled_attention.shape}")
+            # print(f"[DEBUG] spatial upsampled_attention shape: {upsampled_attention.shape}")
             return beta_fused, upsampled_attention
         else:
             return beta_fused
