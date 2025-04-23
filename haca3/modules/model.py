@@ -737,7 +737,7 @@ class HACA3:
 
             # === 2. CALCULATE THETA, ETA FOR TARGET IMAGES (IF NEEDED) ===
             if target_theta is None:
-                queries, thetas_target, queries_features = [], [], []
+                queries, thetas_target, queries_features, thetas_target_feature = [], [], [], []
                 for target_image in target_images:
                     target_image = target_image.to(self.device).unsqueeze(1)
                     theta_target, _ , theta_target_features = self.theta_encoder(target_image)
@@ -754,6 +754,7 @@ class HACA3:
                     # print("eta_target_features shape after:", eta_target_features.shape)
 
                     thetas_target.append(theta_target)
+                    thetas_target_feature.append(theta_target_features)
                     queries.append(
                         torch.cat([theta_target, eta_target], dim=1).view(1, self.theta_dim + self.eta_dim, 1))
                     queries_features.append(
@@ -766,7 +767,7 @@ class HACA3:
                         for i, img_query in enumerate([query.squeeze().cpu().numpy().tolist() for query in queries]):
                             fp.write(','.join([f'target{i}'] + ['%.6f' % val for val in img_query]) + '\n')
             else:
-                queries, thetas_target, queries_features = [], [], []
+                queries, thetas_target, queries_features, thetas_target_feature = [], [], [], []
                 for target_theta_tmp, target_eta_tmp in zip(target_theta, target_eta):
                     thetas_target.append(target_theta_tmp.view(1, self.theta_dim, 1, 1).to(self.device))
                     queries.append(torch.cat([target_theta_tmp.view(1, self.theta_dim, 1).to(self.device),
@@ -808,7 +809,7 @@ class HACA3:
                                                   ['%.6f' % val for val in slice_key]) + '\n')
 
             # ===4. DECODING===
-            for tid, (theta_target, query, norm_val, query_feature) in enumerate(zip(thetas_target, queries, norm_vals, queries_features)):
+            for tid, (theta_target, theta_target_feature, query, norm_val, query_feature) in enumerate(zip(thetas_target, thetas_target_feature, queries, norm_vals, queries_features)):
                 if out_paths is not None:
                     out_prefix = out_paths[tid].name.replace('.nii.gz', '')
                 rec_image, beta_fusion, logit_fusion, attention = [], [], [], []
@@ -855,7 +856,8 @@ class HACA3:
                     #     query_features_tmp, key_features_tmp, value_features_tmp, return_attention=True)
 
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
-                    combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
+                    # combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
+                    combined_map = torch.cat([beta_fusion_tmp, theta_target_feature, dim=1)
                     masks_cpu = [mask.cpu().numpy() for mask in masks_tmp]
                     union_mask = np.logical_or.reduce(masks_cpu)
                     union_mask = torch.from_numpy(union_mask).to(masks_tmp[0].device)
