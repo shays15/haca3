@@ -386,7 +386,7 @@ class SpatialAttentionModule(nn.Module):
                 print(f"mask shape after stack: {mask.shape}")
                 print(f"mask dtype: {mask.dtype}")
                 print("===================")
-                mask = mask.permute(1, 0, 3, 4).squeeze(2)
+                mask = mask.permute(1, 0, 2, 3, 4).squeeze(2)
                 print("=== POST-PROCESS MASK ===")
                 print(f"mask shape after permute + squeeze: {mask.shape}")  # should be [B, N, H, W]
 
