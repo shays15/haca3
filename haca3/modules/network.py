@@ -394,8 +394,10 @@ class SpatialAttentionModule(nn.Module):
             print(f"spatial upsampled_attention shape: {upsampled_attention.shape}")
             masked_attention = upsampled_attention * mask
         
-        normalize_attention_weights = normalize_attention(masked_attention)
-
+        masked_attention_perm = masked_attention.permute(0, 2, 3, 1)  # [B, H, W, N]
+        normalized = normalize_attention(masked_attention_perm)
+        normalize_attention_weights = normalized.permute(0, 3, 1, 2)  # Back to [B, N, H, W]
+        
         # Weighted fusion of beta
         beta_fused = torch.zeros_like(beta_list[0])
         for i in range(N):
