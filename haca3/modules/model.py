@@ -15,7 +15,7 @@ from torch.cuda.amp import autocast
 
 from .utils import *
 from .dataset import HACA3Dataset
-from .network import UNet, ThetaEncoder, EtaEncoder, Patchifier, AttentionModule, SpatialAttentionModule, FusionNet
+from .network import UNet, ThetaEncoder, EtaEncoder, Patchifier, SpatialAttentionModule, FusionNet     # AttentionModule
 
 
 class HACA3:
@@ -39,7 +39,7 @@ class HACA3:
         self.beta_encoder = UNet(in_ch=1, out_ch=self.beta_dim, base_ch=8, final_act='none')
         self.theta_encoder = ThetaEncoder(in_ch=1, out_ch=self.theta_dim)
         self.eta_encoder = EtaEncoder(in_ch=1, out_ch=self.eta_dim)
-        self.attention_module = AttentionModule(self.theta_dim + self.eta_dim, v_ch=self.beta_dim)
+        # self.attention_module = AttentionModule(self.theta_dim + self.eta_dim, v_ch=self.beta_dim)
         self.spatial_attention_module = SpatialAttentionModule(feature_dim=128, v_ch=self.beta_dim)
         self.decoder = UNet(in_ch=1 + self.theta_dim, out_ch=1, base_ch=16, final_act='relu')
         self.patchifier = Patchifier(in_ch=1, out_ch=128)
@@ -53,14 +53,14 @@ class HACA3:
             self.theta_encoder.load_state_dict(self.checkpoint['theta_encoder'])
             self.eta_encoder.load_state_dict(self.checkpoint['eta_encoder'])
             self.decoder.load_state_dict(self.checkpoint['decoder'])
-            self.attention_module.load_state_dict(self.checkpoint['attention_module'])
-            # self.spatial_attention_module.load_state_dict(self.checkpoint['spatial_attention_module'])
+            # self.attention_module.load_state_dict(self.checkpoint['attention_module'])
+            self.spatial_attention_module.load_state_dict(self.checkpoint['spatial_attention_module'])
             self.patchifier.load_state_dict(self.checkpoint['patchifier'])
         self.beta_encoder.to(self.device)
         self.theta_encoder.to(self.device)
         self.eta_encoder.to(self.device)
         self.decoder.to(self.device)
-        self.attention_module.to(self.device)
+        # self.attention_module.to(self.device)
         self.spatial_attention_module.to(self.device)
         self.patchifier.to(self.device)
         self.start_epoch = 0
@@ -74,10 +74,15 @@ class HACA3:
         self.contrastive_loss = PatchNCELoss()
 
         # define optimizer and learning rate scheduler
+        # self.optimizer = Adam(list(self.beta_encoder.parameters()) +
+        #                       list(self.theta_encoder.parameters()) +
+        #                       list(self.decoder.parameters()) +
+        #                       list(self.attention_module.parameters()) +
+        #                       list(self.spatial_attention_module.parameters()) +
+        #                       list(self.patchifier.parameters()), lr=lr)
         self.optimizer = Adam(list(self.beta_encoder.parameters()) +
                               list(self.theta_encoder.parameters()) +
                               list(self.decoder.parameters()) +
-                              list(self.attention_module.parameters()) +
                               list(self.spatial_attention_module.parameters()) +
                               list(self.patchifier.parameters()), lr=lr)
         self.scheduler = CyclicLR(self.optimizer, base_lr=4e-4, max_lr=7e-4, cycle_momentum=False)
@@ -200,61 +205,61 @@ class HACA3:
         selected_contrast_id[unique_subject_ids, selected_contrast_ids, ...] = 1.0
         return target_image, selected_contrast_id
 
-    def decode(self, logits, target_theta, query, keys, available_contrast_id, mask, contrast_dropout=False,
-               contrast_id_to_drop=None):
-        """
-        HACA3 decoding.
+    # def decode(self, logits, target_theta, query, keys, available_contrast_id, mask, contrast_dropout=False,
+    #            contrast_id_to_drop=None):
+    #     """
+    #     HACA3 decoding.
 
-        ===INPUTS===
-        * logits: list (num_contrasts, )
-            Encoded logit of each source image.
-            Each element has shape (batch_size, self.beta_dim, image_dim, image_dim).
-        * target_theta: torch.Tensor (batch_size, self.theta_dim, 1, 1)
-            theta values of target images used for decoding.
-        * query: torch.Tensor (batch_size, self.theta_dim+self.eta_dim, 1, 1)
-            query variable. Concatenation of "target_theta" and "target_eta".
-        * keys: list (num_contrasts, )
-            keys variable. Each element has shape (batch_size, self.theta_dim+self.eta_dim)
-        * available_contrast_id: torch.Tensor (batch_size, num_contrasts)
-            Indicates which contrasts are available. 1: if available, 0: if unavailable.
-        * contrast_dropout: bool
-            Indicates if available contrasts will be randomly dropped out.
+    #     ===INPUTS===
+    #     * logits: list (num_contrasts, )
+    #         Encoded logit of each source image.
+    #         Each element has shape (batch_size, self.beta_dim, image_dim, image_dim).
+    #     * target_theta: torch.Tensor (batch_size, self.theta_dim, 1, 1)
+    #         theta values of target images used for decoding.
+    #     * query: torch.Tensor (batch_size, self.theta_dim+self.eta_dim, 1, 1)
+    #         query variable. Concatenation of "target_theta" and "target_eta".
+    #     * keys: list (num_contrasts, )
+    #         keys variable. Each element has shape (batch_size, self.theta_dim+self.eta_dim)
+    #     * available_contrast_id: torch.Tensor (batch_size, num_contrasts)
+    #         Indicates which contrasts are available. 1: if available, 0: if unavailable.
+    #     * contrast_dropout: bool
+    #         Indicates if available contrasts will be randomly dropped out.
 
-        ===OUTPUTS===
-        * rec_image: torch.Tensor (batch_size, 1, image_dim, image_dim)
-            Synthetic image after decoding.
-        * attention: torch.Tensor (batch_size, num_contrasts)
-            Learned attention of each source image contrast.
-        * logit_fusion: torch.Tensor (batch_size, self.beta_dim, image_dim, image_dim)
-            Optimal logit after fusion.
-        * beta_fusion: torch.Tensor (batch_size, self.beta_dim, image_dim, image_dim)
-            Optimal beta after fusion. beta_fusion = reparameterize_logit(logit_fusion).
-        * attention_map: torch.Tensor (batch_size, num_contrasts)
-            Learned attention map of each source image contrast.
-        """
-        num_contrasts = len(logits)
-        batch_size = logits[0].shape[0]
-        image_dim = logits[0].shape[-1]
+    #     ===OUTPUTS===
+    #     * rec_image: torch.Tensor (batch_size, 1, image_dim, image_dim)
+    #         Synthetic image after decoding.
+    #     * attention: torch.Tensor (batch_size, num_contrasts)
+    #         Learned attention of each source image contrast.
+    #     * logit_fusion: torch.Tensor (batch_size, self.beta_dim, image_dim, image_dim)
+    #         Optimal logit after fusion.
+    #     * beta_fusion: torch.Tensor (batch_size, self.beta_dim, image_dim, image_dim)
+    #         Optimal beta after fusion. beta_fusion = reparameterize_logit(logit_fusion).
+    #     * attention_map: torch.Tensor (batch_size, num_contrasts)
+    #         Learned attention map of each source image contrast.
+    #     """
+    #     num_contrasts = len(logits)
+    #     batch_size = logits[0].shape[0]
+    #     image_dim = logits[0].shape[-1]
 
-        # logits_combined: (batch_size, self.beta_dim, num_contrasts, image_dim * image_dim)
-        logits_combined = torch.stack(logits, dim=-1).permute(0, 1, 4, 2, 3)
-        logits_combined = logits_combined.view(batch_size, self.beta_dim, num_contrasts, image_dim * image_dim)
+    #     # logits_combined: (batch_size, self.beta_dim, num_contrasts, image_dim * image_dim)
+    #     logits_combined = torch.stack(logits, dim=-1).permute(0, 1, 4, 2, 3)
+    #     logits_combined = logits_combined.view(batch_size, self.beta_dim, num_contrasts, image_dim * image_dim)
 
-        # value: (batch_size, self.beta_dim, image_dim*image_dim, num_contrasts)
-        v = logits_combined.permute(0, 1, 3, 2)
-        # key: (batch_size, self.theta_dim+self.eta_dim, 1, num_contrasts)
-        k = torch.cat(keys, dim=-1)
-        # query: (batch_size, self.theta_dim+self.eta_dim, 1)
-        q = query.view(batch_size, self.theta_dim + self.eta_dim, 1)
+    #     # value: (batch_size, self.beta_dim, image_dim*image_dim, num_contrasts)
+    #     v = logits_combined.permute(0, 1, 3, 2)
+    #     # key: (batch_size, self.theta_dim+self.eta_dim, 1, num_contrasts)
+    #     k = torch.cat(keys, dim=-1)
+    #     # query: (batch_size, self.theta_dim+self.eta_dim, 1)
+    #     q = query.view(batch_size, self.theta_dim + self.eta_dim, 1)
 
-        if contrast_dropout:
-            available_contrast_id = dropout_contrasts(available_contrast_id, contrast_id_to_drop)
-        logit_fusion, attention = self.attention_module(q, k, v, mask, modality_dropout=1 - available_contrast_id,
-                                                        temperature=10.0)
-        beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
-        combined_map = torch.cat([beta_fusion, target_theta.repeat(1, 1, image_dim, image_dim)], dim=1)
-        rec_image = self.decoder(combined_map)# * mask
-        return rec_image, attention, logit_fusion, beta_fusion
+    #     if contrast_dropout:
+    #         available_contrast_id = dropout_contrasts(available_contrast_id, contrast_id_to_drop)
+    #     logit_fusion, attention = self.attention_module(q, k, v, mask, modality_dropout=1 - available_contrast_id,
+    #                                                     temperature=10.0)
+    #     beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
+    #     combined_map = torch.cat([beta_fusion, target_theta.repeat(1, 1, image_dim, image_dim)], dim=1)
+    #     rec_image = self.decoder(combined_map)# * mask
+    #     return rec_image, attention, logit_fusion, beta_fusion
 
     def decode_spatial(self, logits, target_theta_feature, query_features, keys_feature_list, available_contrast_id, mask, contrast_dropout=False,
                contrast_id_to_drop=None):
@@ -430,13 +435,23 @@ class HACA3:
             self.writer.add_scalar(f'{train_or_valid}/beta cycle loss', cycle_loss['beta_cyc'], curr_iteration)
 
     def save_model(self, epoch, file_name):
+        # state = {'epoch': epoch,
+        #          'timestr': self.timestr,
+        #          'beta_encoder': self.beta_encoder.state_dict(),
+        #          'theta_encoder': self.theta_encoder.state_dict(),
+        #          'eta_encoder': self.eta_encoder.state_dict(),
+        #          'decoder': self.decoder.state_dict(),
+        #          'attention_module': self.attention_module.state_dict(),
+        #          'spatial_attention_module': self.spatial_attention_module.state_dict(),
+        #          'patchifier': self.patchifier.state_dict(),
+        #          'optimizer': self.optimizer.state_dict(),
+        #          'scheduler': self.scheduler.state_dict()}
         state = {'epoch': epoch,
                  'timestr': self.timestr,
                  'beta_encoder': self.beta_encoder.state_dict(),
                  'theta_encoder': self.theta_encoder.state_dict(),
                  'eta_encoder': self.eta_encoder.state_dict(),
                  'decoder': self.decoder.state_dict(),
-                 'attention_module': self.attention_module.state_dict(),
                  'spatial_attention_module': self.spatial_attention_module.state_dict(),
                  'patchifier': self.patchifier.state_dict(),
                  'optimizer': self.optimizer.state_dict(),
@@ -480,17 +495,21 @@ class HACA3:
             contrast_id_to_drop = contrast_id_for_decoding
         else:
             contrast_id_to_drop = None
-        rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
-                                                                      available_contrast_id,
-                                                                      masks,
-                                                                      contrast_dropout=contrast_dropout,
-                                                                      contrast_id_to_drop=contrast_id_to_drop)
-        
-        rec_image_sp, attention_sp, logit_fusion_sp, beta_fusion_sp = self.decode_spatial(logits, theta_target_features, 
+        # rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
+        #                                                               available_contrast_id,
+        #                                                               masks,
+        #                                                               contrast_dropout=contrast_dropout,
+        #                                                               contrast_id_to_drop=contrast_id_to_drop)
+        rec_image, attention, logit_fusion, beta_fusion = self.decode_spatial(logits, theta_target_features, 
                                                                                           query_features, keys_features, 
                                                                                           available_contrast_id, masks, 
                                                                                           contrast_dropout=contrast_dropout,
                                                                                           contrast_id_to_drop=contrast_id_to_drop)
+        # rec_image_sp, attention_sp, logit_fusion_sp, beta_fusion_sp = self.decode_spatial(logits, theta_target_features, 
+        #                                                                                   query_features, keys_features, 
+        #                                                                                   available_contrast_id, masks, 
+        #                                                                                   contrast_dropout=contrast_dropout,
+        #                                                                                   contrast_id_to_drop=contrast_id_to_drop)
         
         loss = self.calculate_loss(rec_image, target_image, mask, mu_target, logvar_target,
                                    betas, source_images, available_contrast_id, is_train=is_train)
@@ -519,14 +538,19 @@ class HACA3:
             query_features = torch.cat([theta_target_feature, eta_target_feature], dim=1)
             keys = [torch.cat([theta, eta], dim=1) for (theta, eta) in zip(thetas_source, etas_source)]
             keys_features = [torch.cat([theta_feature, eta_feature], dim=1) for (theta_feature, eta_feature) in zip(theta_source_features, eta_source_features)]
-            rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
-                                                                          available_contrast_id, masks,
-                                                                          contrast_dropout=True)
-            rec_image_sp, attention_sp, logit_fusion_sp, beta_fusion_sp = self.decode_spatial(logits, theta_target_feature, 
+            # rec_image, attention, logit_fusion, beta_fusion = self.decode(logits, theta_target, query, keys,
+            #                                                               available_contrast_id, masks,
+            #                                                               contrast_dropout=True)
+            rec_image, attention, logit_fusion, beta_fusion = self.decode_spatial(logits, theta_target_feature, 
                                                                                           query_features, keys_features, 
                                                                                           available_contrast_id, masks, 
                                                                                           contrast_dropout=contrast_dropout,
                                                                                           contrast_id_to_drop=contrast_id_to_drop)
+            # rec_image_sp, attention_sp, logit_fusion_sp, beta_fusion_sp = self.decode_spatial(logits, theta_target_feature, 
+            #                                                                               query_features, keys_features, 
+            #                                                                               available_contrast_id, masks, 
+            #                                                                               contrast_dropout=contrast_dropout,
+            #                                                                               contrast_id_to_drop=contrast_id_to_drop)
         
             theta_recon, _ , theta_recon_features = self.theta_encoder(rec_image)
             eta_recon, eta_recon_features = self.eta_encoder(rec_image)
@@ -542,10 +566,10 @@ class HACA3:
                                      f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
                                      '_inter-site.nii.gz')
             save_image(source_images + [rec_image] + [target_image_shuffled] + betas + [beta_fusion], file_name)
-            file_name_sp = os.path.join(self.out_dir, f'training_results_{self.timestr}',
-                                     f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
-                                     '_inter-site_sp.nii.gz')
-            save_image(source_images + [rec_image_sp] + [target_image_shuffled] + betas + [beta_fusion_sp], file_name_sp)
+            # file_name_sp = os.path.join(self.out_dir, f'training_results_{self.timestr}',
+            #                          f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
+            #                          '_inter-site_sp.nii.gz')
+            # save_image(source_images + [rec_image_sp] + [target_image_shuffled] + betas + [beta_fusion_sp], file_name_sp)
 
         # ====== 5. VISUALIZE LOSSES FOR INTRA- AND INTER-SITE I2I ======
         if epoch > 1:
@@ -597,7 +621,7 @@ class HACA3:
             self.theta_encoder.train()
             self.beta_encoder.train()
             self.decoder.train()
-            self.attention_module.train()
+            # self.attention_module.train()
             self.spatial_attention_module.train()
             self.patchifier.train()
             for batch_id, image_dicts in enumerate(self.train_loader):
@@ -610,7 +634,7 @@ class HACA3:
             self.theta_encoder.eval()
             self.decoder.eval()
             self.patchifier.eval()
-            self.attention_module.eval()
+            # self.attention_module.eval()
             self.spatial_attention_module.eval()
             with torch.set_grad_enabled(False):
                 for batch_id, image_dicts in enumerate(self.valid_loader):
@@ -651,12 +675,12 @@ class HACA3:
                     logit_tmp.append(logit)
                     beta_tmp.append(beta)
                     key_tmp.append(torch.cat([theta_source, eta_source], dim=1))
-                    print("theta_source_feature shape:", theta_source_feature.shape)
-                    print("eta_source_feature shape:", eta_source_feature.shape)
+                    # print("theta_source_feature shape:", theta_source_feature.shape)
+                    # print("eta_source_feature shape:", eta_source_feature.shape)
                     eta_source_feature = F.adaptive_avg_pool2d(
                         eta_source_feature, output_size=theta_source_feature.shape[-2:]
                     )
-                    print("eta_source_feature shape after:", eta_source_feature.shape)
+                    # print("eta_source_feature shape after:", eta_source_feature.shape)
                     key_features_tmp.append(torch.cat([theta_source_feature, eta_source_feature], dim=1))
 
                 masks.append(torch.cat(mask_tmp, dim=0))
@@ -675,13 +699,13 @@ class HACA3:
                     eta_target, eta_target_features = self.eta_encoder(target_image)
                     eta_target = eta_target.mean(dim=0, keepdim=True).view(1, self.eta_dim, 1, 1)
                     
-                    print("theta_target_features shape:", theta_target_features.shape)
-                    print("eta_target_features shape before:", eta_target_features.shape)
+                    # print("theta_target_features shape:", theta_target_features.shape)
+                    # print("eta_target_features shape before:", eta_target_features.shape)
                     
                     eta_target_features = F.adaptive_avg_pool2d(
                         eta_target_features, output_size=theta_target_features.shape[-2:]
                     )
-                    print("eta_target_features shape after:", eta_target_features.shape)
+                    # print("eta_target_features shape after:", eta_target_features.shape)
 
                     thetas_target.append(theta_target)
                     queries.append(
@@ -701,14 +725,14 @@ class HACA3:
                     thetas_target.append(target_theta_tmp.view(1, self.theta_dim, 1, 1).to(self.device))
                     queries.append(torch.cat([target_theta_tmp.view(1, self.theta_dim, 1).to(self.device),
                                               target_eta_tmp.view(1, self.eta_dim, 1).to(self.device)], dim=1))
-            # DEBUGGING MORE
-            print("Addition debugging...")
-            print(f"# queries: {len(queries)}")
-            print(f"# thetas_target: {len(thetas_target)}")
-            print(f"# queries_features: {len(queries_features)}")
-            print(f"queries[0] shape: {queries[0].shape}")
-            print(f"thetas_target[0] shape: {thetas_target[0].shape}")
-            print(f"queries_features[0] shape: {queries_features[0].shape}")
+            # # DEBUGGING MORE
+            # print("Addition debugging...")
+            # print(f"# queries: {len(queries)}")
+            # print(f"# thetas_target: {len(thetas_target)}")
+            # print(f"# queries_features: {len(queries_features)}")
+            # print(f"queries[0] shape: {queries[0].shape}")
+            # print(f"thetas_target[0] shape: {thetas_target[0].shape}")
+            # print(f"queries_features[0] shape: {queries_features[0].shape}")
 
             # === 3. SAVE ENCODED VARIABLES (IF REQUESTED) ===
             if save_intermediate and header is not None:
@@ -739,11 +763,10 @@ class HACA3:
 
             # ===4. DECODING===
             for tid, (theta_target, query, norm_val, query_feature) in enumerate(zip(thetas_target, queries, norm_vals, queries_features)):
-                print(f"Decoding - Query Feature: {query_feature.shape}")
                 if out_paths is not None:
                     out_prefix = out_paths[tid].name.replace('.nii.gz', '')
                 rec_image, beta_fusion, logit_fusion, attention = [], [], [], []
-                logit_fusion_sp, attention_sp = [], []
+                # logit_fusion_sp, attention_sp = [], []
                 for batch_id in range(num_batches):
                     keys_tmp = [divide_into_batches(ks, num_batches)[batch_id] for ks in keys]
                     logits_tmp = [divide_into_batches(ls, num_batches)[batch_id] for ls in logits]
@@ -754,16 +777,12 @@ class HACA3:
                     v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images))
                     
                     # 1. Get query_features_tmp
-                    print("---- SPATIAL ATTENTION DEBUG ----")
-                    print(f"query_feature size: {query_feature.shape}") # want 128,6,6
+                    # print("---- SPATIAL ATTENTION DEBUG ----")
+                    # print(f"query_feature size: {query_feature.shape}") # want 128,6,6
                     query_feature_tid = query_feature[tid]  # want shape: [1, 128, 6, 6]
                     query_feature_unseq = query_feature_tid.unsqueeze(0)
-                    
-                    print(f"query_feature[tid] size: {query_feature_tid.shape}")
-                    print(f"query_feature_unseq size: {query_feature_unseq.shape}")
-
                     query_features_tmp = query_feature_unseq.repeat(batch_size, 1, 1, 1)
-                    print(f"query_features_tmp size: {query_features_tmp.shape}")
+                    # print(f"query_features_tmp size: {query_features_tmp.shape}")
 
                     # 2. Get key_features_tmp and value_features_tmp for this batch
                     key_features_tmp = [divide_into_batches(kf, num_batches)[batch_id] for kf in keys_features]
@@ -772,20 +791,22 @@ class HACA3:
                     #expanded_mask = masks_tmp[0].unsqueeze(1)
                     #expanded_mask = masks_tmp.expand(-1, attention.size(1), -1, -1, -1).squeeze(2)
 
-                    print("---- SPATIAL ATTENTION DEBUG ----")
-                    print("query_features_tmp should be [B, 128, 6, 6]")
-                    print("key_features_tmp[i] should be [B, 128, 6, 6]")
-                    print("value_features_tmp[i] should be [B, beta_dim, 224, 224]")
-                    print("query_features_tmp:", query_features_tmp.shape) # 1120, 128, 6, 6
-                    for i, ke in enumerate(key_features_tmp):
-                        print(f"key_features_tmp[{i}]:", ke.shape)
-                    for i, va in enumerate(value_features_tmp):
-                        print(f"value_features_tmp[{i}]:", va.shape)
-                    print("---------------------------------")
+                    # print("---- SPATIAL ATTENTION DEBUG ----")
+                    # print("query_features_tmp should be [B, 128, 6, 6]")
+                    # print("key_features_tmp[i] should be [B, 128, 6, 6]")
+                    # print("value_features_tmp[i] should be [B, beta_dim, 224, 224]")
+                    # print("query_features_tmp:", query_features_tmp.shape) # 1120, 128, 6, 6
+                    # for i, ke in enumerate(key_features_tmp):
+                    #     print(f"key_features_tmp[{i}]:", ke.shape)
+                    # for i, va in enumerate(value_features_tmp):
+                    #     print(f"value_features_tmp[{i}]:", va.shape)
+                    # print("---------------------------------")
 
-                    logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
-                    logit_fusion_sp_tmp, attention_sp_tmp = self.spatial_attention_module(
+                    # logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
+                    logit_fusion_tmp, attention_tmp = self.spatial_attention_module(
                         query_features_tmp, key_features_tmp, value_features_tmp, return_attention=True)
+                    # logit_fusion_sp_tmp, attention_sp_tmp = self.spatial_attention_module(
+                    #     query_features_tmp, key_features_tmp, value_features_tmp, return_attention=True)
 
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
                     combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
@@ -797,15 +818,15 @@ class HACA3:
                     beta_fusion.append(beta_fusion_tmp)
                     logit_fusion.append(logit_fusion_tmp)
                     attention.append(attention_tmp)
-                    logit_fusion_sp.append(logit_fusion_sp_tmp)
-                    attention_sp.append(attention_sp_tmp)
+                    # logit_fusion_sp.append(logit_fusion_sp_tmp)
+                    # attention_sp.append(attention_sp_tmp)
 
                 rec_image = torch.cat(rec_image, dim=0)
                 beta_fusion = torch.cat(beta_fusion, dim=0)
                 logit_fusion = torch.cat(logit_fusion, dim=0)
                 attention = torch.cat(attention, dim=0)
-                logit_fusion_sp = torch.cat(logit_fusion_sp, dim=0)
-                attention_sp = torch.cat(attention_sp, dim=0)
+                # logit_fusion_sp = torch.cat(logit_fusion_sp, dim=0)
+                # attention_sp = torch.cat(attention_sp, dim=0)
 
                 # ===5. SAVE INTERMEDIATE RESULTS (IF REQUESTED)===
                 # harmonized image
@@ -835,11 +856,11 @@ class HACA3:
                         file_name = intermediate_out_dir / f'{out_prefix}_logit_fusion.nii.gz'
                         nib.save(img_save, file_name)
                     # 5b. logit fusion sp
-                    if recon_orientation == 'axial':
-                        img_save = logit_fusion_sp.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
-                        img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96, :], None, header)
-                        file_name = intermediate_out_dir / f'{out_prefix}_logit_fusion_sp.nii.gz'
-                        nib.save(img_save, file_name)
+                    # if recon_orientation == 'axial':
+                    #     img_save = logit_fusion_sp.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
+                    #     img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96, :], None, header)
+                    #     file_name = intermediate_out_dir / f'{out_prefix}_logit_fusion_sp.nii.gz'
+                    #     nib.save(img_save, file_name)
                     # 5c. attention
                     if recon_orientation == 'axial':
                         img_save = attention.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
@@ -847,22 +868,22 @@ class HACA3:
                         file_name = intermediate_out_dir / f'{out_prefix}_attention.nii.gz'
                         nib.save(img_save, file_name)
                     # 5d. spatial attention
-                    if recon_orientation == 'axial':
-                        # spatial attention shape: [B, N, H, W]
-                        # match your current permutation strategy
-                        print("-----SAVING SP ATTENTION------")
-                        print("attention_sp shape before permute:", attention_sp.shape)
-                        attn_save = attention_sp.permute(2, 3, 0, 1)  # (H, W, B, N)
-                        print("attention_sp shape after 1 permute:", attn_save.shape)
-                        attn_save = attn_save.permute(1, 0, 2, 3)  # (W, H, B, N) to match your existing pattern
-                        print("attention_sp shape after 2 permute:", attn_save.shape)
-                        # optional: crop to center 192×192 (assuming H=W=224)
-                        attn_save = attn_save[112 - 96:112 + 96, :, 112 - 96:112 + 96]  # (96x2, H, B, N)
+                    # if recon_orientation == 'axial':
+                    #     # spatial attention shape: [B, N, H, W]
+                    #     # match your current permutation strategy
+                    #     print("-----SAVING SP ATTENTION------")
+                    #     print("attention_sp shape before permute:", attention_sp.shape)
+                    #     attn_save = attention_sp.permute(2, 3, 0, 1)  # (H, W, B, N)
+                    #     print("attention_sp shape after 1 permute:", attn_save.shape)
+                    #     attn_save = attn_save.permute(1, 0, 2, 3)  # (W, H, B, N) to match your existing pattern
+                    #     print("attention_sp shape after 2 permute:", attn_save.shape)
+                    #     # optional: crop to center 192×192 (assuming H=W=224)
+                    #     attn_save = attn_save[112 - 96:112 + 96, :, 112 - 96:112 + 96]  # (96x2, H, B, N)
                     
-                        # convert to NIfTI
-                        img_save = nib.Nifti1Image(attn_save.cpu().numpy(), None, header)
-                        file_name = intermediate_out_dir / f'{out_prefix}_spatial_attention.nii.gz'
-                        nib.save(img_save, file_name)
+                    #     # convert to NIfTI
+                    #     img_save = nib.Nifti1Image(attn_save.cpu().numpy(), None, header)
+                    #     file_name = intermediate_out_dir / f'{out_prefix}_spatial_attention.nii.gz'
+                    #     nib.save(img_save, file_name)
                         
                     # # 5d. attention_map
                     # if recon_orientation == 'axial' and attention_map != []:
