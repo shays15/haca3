@@ -386,12 +386,12 @@ class SpatialAttentionModule(nn.Module):
                 print(f"mask shape after stack: {mask.shape}")
                 print(f"mask dtype: {mask.dtype}")
                 print("===================")
-            if len(mask.shape) == 5:  # e.g., (B, 1, H, W, N) → permute to (B, N, H, W)
-                mask = mask.squeeze(1).permute(0, 4, 2, 3)
-            elif len(mask.shape) == 4 and mask.shape[1] != N:
-                # handle case: (B, 1, H, W) to (B, N, H, W)
-                mask = mask.repeat(1, N, 1, 1)
+                mask = mask.permute(1, 0, 3, 4).squeeze(2)
+                print("=== POST-PROCESS MASK ===")
+                print(f"mask shape after permute + squeeze: {mask.shape}")  # should be [B, N, H, W]
+
             upsampled_attention = F.interpolate(attention_weights, size=beta_list[0].shape[-2:], mode='bilinear', align_corners=False)
+            print(f"spatial upsampled_attention shape: {upsampled_attention.shape}")
             masked_attention = upsampled_attention * mask
         
         normalize_attention_weights = normalize_attention(masked_attention)
