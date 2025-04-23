@@ -118,11 +118,11 @@ class HACA3:
                 mus.append(mu)
                 logvars.append(logvar)
                 theta_features.append(theta_feature)
-            # Convert lists to batched tensors
-            thetas = torch.cat(thetas, dim=0)
-            mus = torch.cat(mus, dim=0)
-            logvars = torch.cat(logvars, dim=0)
-            theta_features = torch.cat(theta_features, dim=0)
+            # # Convert lists to batched tensors
+            # thetas = torch.cat(thetas, dim=0)
+            # mus = torch.cat(mus, dim=0)
+            # logvars = torch.cat(logvars, dim=0)
+            # theta_features = torch.cat(theta_features, dim=0)
         else:
             mus, logvars, theta_features = self.theta_encoder(images)
             thetas = torch.randn(mus.size()).to(self.device) * torch.sqrt(torch.exp(logvars)) + mus
@@ -144,9 +144,9 @@ class HACA3:
                 eta, eta_feature = self.eta_encoder(image)
                 etas.append(eta)
                 eta_features.append(eta_feature)
-            # Concatenate for batch dimension
-            etas = torch.cat(etas, dim=0)
-            eta_features = torch.cat(eta_features, dim=0)
+            # # Concatenate for batch dimension
+            # etas = torch.cat(etas, dim=0)
+            # eta_features = torch.cat(eta_features, dim=0)
         else:
             etas, eta_features = self.eta_encoder(images)
         return etas, eta_features
