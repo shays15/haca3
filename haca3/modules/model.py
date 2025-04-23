@@ -314,7 +314,15 @@ class HACA3:
             query_features, keys, values, modality_dropout=modality_dropout, return_attention=True
         )
         beta_fusion = self.channel_aggregation(reparameterize_logit(logit_fusion))
+        if target_theta_feature.shape[-2:] != beta_fusion.shape[-2:]:
+            target_theta_feature = F.interpolate(
+                target_theta_feature,
+                size=beta_fusion.shape[-2:],
+                mode='bilinear',
+                align_corners=False
+            )
         combined_map = torch.cat([beta_fusion, target_theta_feature], dim=1)
+
         rec_image = self.decoder(combined_map)# * mask
         return rec_image, attention, logit_fusion, beta_fusion
 
