@@ -855,9 +855,9 @@ class HACA3:
 
                     # logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
                     logit_fusion_tmp, attention_tmp = self.spatial_attention_module(
-                        query_features_tmp, key_features_tmp, value_features_tmp, return_attention=True)
+                        query_features_tmp, key_features_tmp, value_features_tmp, masks_tmp, return_attention=True)
                     # logit_fusion_sp_tmp, attention_sp_tmp = self.spatial_attention_module(
-                    #     query_features_tmp, key_features_tmp, value_features_tmp, return_attention=True)
+                    #     query_features_tmp, key_features_tmp, value_features_tmp, masks_tmp, return_attention=True)
 
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
                     # combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
