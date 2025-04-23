@@ -380,6 +380,15 @@ class SpatialAttentionModule(nn.Module):
 
         # === Apply brain region mask ===
         if mask is not None:
+            if isinstance(mask, torch.Tensor):
+                print("=== DEBUG MASK (torch.Tensor) ===")
+                print(f"mask.shape: {mask.shape}")
+                print(f"mask.ndim: {mask.ndim}")
+                print(f"mask.dtype: {mask.dtype}")
+                print("==============================")
+            else:
+                print("mask is not a torch.Tensor. Type:", type(mask))
+
             if isinstance(mask, list):
                 mask = torch.stack(mask)
             if len(mask.shape) == 5:  # e.g., (B, 1, H, W, N) → permute to (B, N, H, W)
