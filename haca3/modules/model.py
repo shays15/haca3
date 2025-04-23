@@ -559,10 +559,10 @@ class HACA3:
                                      f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
                                      '_intra-site.nii.gz')
             save_image(source_images + [rec_image] + [target_image] + betas + [beta_fusion], file_name)
-            file_name_sp = os.path.join(self.out_dir, f'training_results_{self.timestr}',
-                                     f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
-                                     '_intra-site_sp.nii.gz')
-            save_image(source_images + [rec_image_sp] + [target_image] + betas + [beta_fusion_sp], file_name_sp)
+            # file_name_sp = os.path.join(self.out_dir, f'training_results_{self.timestr}',
+            #                          f'{train_or_valid}_epoch{str(epoch).zfill(3)}_batch{str(batch_id).zfill(4)}'
+            #                          '_intra-site_sp.nii.gz')
+            # save_image(source_images + [rec_image_sp] + [target_image] + betas + [beta_fusion_sp], file_name_sp)
 
         # ====== 3. INTER-SITE IMAGE-TO-IMAGE TRANSLATION ======
         if epoch > 1:
@@ -860,6 +860,13 @@ class HACA3:
 
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
                     # combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
+                    if theta_target_feature_tmp.shape[-2:] != beta_fusion_tmp.shape[-2:]:
+                        theta_target_feature_tmp = F.interpolate(
+                            theta_target_feature_tmp,
+                            size=beta_fusion_tmp.shape[-2:],
+                            mode='bilinear',
+                            align_corners=False
+                        )
                     combined_map = torch.cat([beta_fusion_tmp, theta_target_feature_tmp], dim=1)
                     masks_cpu = [mask.cpu().numpy() for mask in masks_tmp]
                     union_mask = np.logical_or.reduce(masks_cpu)
