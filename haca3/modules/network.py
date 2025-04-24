@@ -393,7 +393,7 @@ class SpatialAttentionModule(nn.Module):
 
         upsampled_attention = F.interpolate(attention_weights, size=beta_list[0].shape[-2:], mode='bilinear', align_corners=False)
         # print(f"spatial upsampled_attention shape: {upsampled_attention.shape}")
-        masked_attention = upsampled_attention * mask
+        masked_attention = upsampled_attention # * mask
         
         masked_attention_perm = masked_attention.permute(0, 2, 3, 1)  # [B, H, W, N]
         normalized = normalize_attention(masked_attention_perm)
