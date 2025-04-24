@@ -158,13 +158,15 @@ class HACA3:
         degradation_ids = sorted(np.random.choice(range(num_contrasts),
                                                   num_contrasts_with_degradation,
                                                   replace=False))
-        source_images = []
+        source_images, mask = [], []
         for i in range(num_contrasts):
             if i in degradation_ids:
                 source_images.append(image_dicts[i]['image_degrade'].to(self.device))
+                masks.appened(image_dicts[i]['mask'].to(self.device))
             else:
                 source_images.append(image_dicts[i]['image'].to(self.device))
-        return source_images
+                masks.append(image_dicts[i]['mask'].to(self.device))
+        return source_images, masks
 
     def channel_aggregation(self, beta_onehot_encode):
         """
@@ -484,9 +486,9 @@ class HACA3:
             contrast_dropout = False
             is_train = False
 
-        source_images = self.prepare_source_images(image_dicts)
+        source_images, masks = self.prepare_source_images(image_dicts)
         mask = image_dicts[0]['mask'].to(self.device)
-        masks = torch.stack([d['mask'] for d in image_dicts], dim=-1).to(self.device)
+        # masks = torch.stack([d['mask'] for d in image_dicts], dim=-1).to(self.device)
         # print(f'Mask in model is: {mask.shape}')
         # print(f'Length of image_dicts[0] is: {len(image_dicts[0])}')
         # print(f'Length of image_dicts is: {len(image_dicts)}')
