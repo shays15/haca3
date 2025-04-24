@@ -379,22 +379,21 @@ class SpatialAttentionModule(nn.Module):
         # print(f"[DEBUG] spatial attention_weights shape: {attention_weights.shape}")
 
         # === Apply brain region mask ===
-        if mask is not None:
-            if isinstance(mask, list):
-                mask = torch.stack(mask)
-            
-            # print("=== DEBUG MASK ===")
-            # print(f"mask shape after stack: {mask.shape}")
-            # print(f"mask dtype: {mask.dtype}")
-            # print("===================")
-            # mask = mask.permute(1, 0, 2, 3, 4).squeeze(2)
-            mask = mask.permute(0, 4, 1, 2, 3).squeeze(2)
-            # print("=== POST-PROCESS MASK ===")
-            # print(f"mask shape after permute + squeeze: {mask.shape}")  # should be [B, N, H, W]
+        if isinstance(mask, list):
+            mask = torch.stack(mask)
+        
+        # print("=== DEBUG MASK ===")
+        # print(f"mask shape after stack: {mask.shape}")
+        # print(f"mask dtype: {mask.dtype}")
+        # print("===================")
+        # mask = mask.permute(1, 0, 2, 3, 4).squeeze(2)
+        mask = mask.permute(0, 4, 1, 2, 3).squeeze(2)
+        # print("=== POST-PROCESS MASK ===")
+        # print(f"mask shape after permute + squeeze: {mask.shape}")  # should be [B, N, H, W]
 
-            upsampled_attention = F.interpolate(attention_weights, size=beta_list[0].shape[-2:], mode='bilinear', align_corners=False)
-            # print(f"spatial upsampled_attention shape: {upsampled_attention.shape}")
-            masked_attention = upsampled_attention * mask
+        upsampled_attention = F.interpolate(attention_weights, size=beta_list[0].shape[-2:], mode='bilinear', align_corners=False)
+        # print(f"spatial upsampled_attention shape: {upsampled_attention.shape}")
+        masked_attention = upsampled_attention * mask
         
         masked_attention_perm = masked_attention.permute(0, 2, 3, 1)  # [B, H, W, N]
         normalized = normalize_attention(masked_attention_perm)
