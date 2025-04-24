@@ -158,7 +158,7 @@ class HACA3:
         degradation_ids = sorted(np.random.choice(range(num_contrasts),
                                                   num_contrasts_with_degradation,
                                                   replace=False))
-        source_images, mask = [], []
+        source_images, masks = [], []
         for i in range(num_contrasts):
             if i in degradation_ids:
                 source_images.append(image_dicts[i]['image_degrade'].to(self.device))
