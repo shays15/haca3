@@ -162,7 +162,7 @@ class HACA3:
         for i in range(num_contrasts):
             if i in degradation_ids:
                 source_images.append(image_dicts[i]['image_degrade'].to(self.device))
-                masks.appened(image_dicts[i]['mask'].to(self.device))
+                masks.append(image_dicts[i]['mask'].to(self.device))
             else:
                 source_images.append(image_dicts[i]['image'].to(self.device))
                 masks.append(image_dicts[i]['mask'].to(self.device))
