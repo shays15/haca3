@@ -166,6 +166,7 @@ class HACA3:
             else:
                 source_images.append(image_dicts[i]['image'].to(self.device))
                 masks.append(image_dicts[i]['mask'].to(self.device))
+        masks = torch.stack(masks, dim=-1)  # [H, W, num_contrasts]
         return source_images, masks
 
     def channel_aggregation(self, beta_onehot_encode):
