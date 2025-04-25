@@ -875,9 +875,9 @@ class HACA3:
                         )
                     combined_map = torch.cat([beta_fusion_tmp, theta_target_feature_tmp], dim=1)
                     masks_cpu = [mask.cpu().numpy() for mask in masks_tmp]
-                    print(f"Mask cpu shape = {masks_cpu.shape}")
+                    #print(f"Mask cpu shape = {masks_cpu.shape}")
                     union_mask = np.logical_or.reduce(masks_cpu)
-                    print(f"Union Mask shape 1 = {union_mask.shape}")
+                    #print(f"Union Mask shape 1 = {union_mask.shape}")
                     union_mask = torch.from_numpy(union_mask).to(masks_tmp[0].device)
                     print(f"Union Mask shape 2 = {union_mask.shape}")
                     rec_image_tmp = self.decoder(combined_map) # * union_mask
