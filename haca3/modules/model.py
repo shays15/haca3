@@ -396,7 +396,9 @@ class HACA3:
 
         """
         # 1. reconstruction loss
-        rec_loss = self.l1_loss(rec_image[mask], ref_image[mask]).mean()
+        # rec_loss = self.l1_loss(rec_image[mask], ref_image[mask]).mean()
+        # remove masking
+        rec_loss = self.l1_loss(rec_image, ref_image).mean()
         perceptual_loss = self.perceptual_loss(rec_image, ref_image).mean()
 
         # 2. KLD loss
