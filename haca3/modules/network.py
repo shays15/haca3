@@ -399,26 +399,26 @@ class SpatialAttentionModule(nn.Module):
         normalized = normalize_attention(masked_attention_perm)
         normalize_attention_weights = normalized.permute(0, 3, 1, 2)  # Back to [B, N, H, W]
 
-        # Correct initialization of manual_attention
-        manual_attention = torch.zeros_like(normalize_attention_weights)
+        # # Correct initialization of manual_attention
+        # manual_attention = torch.zeros_like(normalize_attention_weights)
         
-        # Set deterministic attention
-        H, W = manual_attention.shape[2], manual_attention.shape[3]
+        # # Set deterministic attention
+        # H, W = manual_attention.shape[2], manual_attention.shape[3]
         
-        manual_attention[:, 0, :H//2, :] = 1.0          # top half
-        manual_attention[:, 1, H//2:, :W//2] = 1.0      # bottom-left
-        manual_attention[:, 2, H//2:, W//2:] = 1.0      # bottom-right
+        # manual_attention[:, 0, :H//2, :] = 1.0          # top half
+        # manual_attention[:, 1, H//2:, :W//2] = 1.0      # bottom-left
+        # manual_attention[:, 2, H//2:, W//2:] = 1.0      # bottom-right
         
-        # Normalize manually
-        manual_attention_sum = manual_attention.sum(dim=1, keepdim=True) + 1e-8
-        normalize_attention_weights = manual_attention / manual_attention_sum
+        # # Normalize manually
+        # manual_attention_sum = manual_attention.sum(dim=1, keepdim=True) + 1e-8
+        # normalize_attention_weights = manual_attention / manual_attention_sum
         
-        # Assert with matching device
-        device = normalize_attention_weights.device
-        assert torch.allclose(
-            normalize_attention_weights.sum(dim=1), 
-            torch.ones((B, H, W), device=device)
-        )
+        # # Assert with matching device
+        # device = normalize_attention_weights.device
+        # assert torch.allclose(
+        #     normalize_attention_weights.sum(dim=1), 
+        #     torch.ones((B, H, W), device=device)
+        # )
 
 
 
