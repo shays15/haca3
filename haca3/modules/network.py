@@ -398,7 +398,25 @@ class SpatialAttentionModule(nn.Module):
         masked_attention_perm = masked_attention.permute(0, 2, 3, 1)  # [B, H, W, N]
         normalized = normalize_attention(masked_attention_perm)
         normalize_attention_weights = normalized.permute(0, 3, 1, 2)  # Back to [B, N, H, W]
+
+        # Example manual attention for testing purposes
+        manual_attention = torch.zeros((B, N, H, W))
         
+        # Set attention to be deterministic, e.g., modality 0 gets full attention at top half,
+        # modality 1 gets full attention at bottom-left quadrant,
+        # modality 2 gets full attention at bottom-right quadrant.
+        manual_attention[:, 0, :2, :] = 1.0  # top half of image to modality 0
+        manual_attention[:, 1, 2:, :2] = 1.0  # bottom-left to modality 1
+        manual_attention[:, 2, 2:, 2:] = 1.0  # bottom-right to modality 2
+        
+        # Normalize manually
+        manual_attention_sum = manual_attention.sum(dim=1, keepdim=True) + 1e-8
+        normalize_attention_weights = manual_attention / manual_attention_sum
+        
+        # Verify sum to 1 across modalities
+        assert torch.allclose(normalize_attention_weights.sum(dim=1), torch.ones((B, H, W)))
+
+
         # Weighted fusion of beta
         beta_fused = torch.zeros_like(beta_list[0])
         for i in range(N):
