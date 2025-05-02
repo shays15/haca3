@@ -400,14 +400,17 @@ class SpatialAttentionModule(nn.Module):
         normalize_attention_weights = normalized.permute(0, 3, 1, 2)  # Back to [B, N, H, W]
 
         # Example manual attention for testing purposes
-        manual_attention = torch.zeros(normalize_attention_weights)
+        manual_attention = torch.zeros_like(normalize_attention_weights)
         
         # Set attention to be deterministic, e.g., modality 0 gets full attention at top half,
         # modality 1 gets full attention at bottom-left quadrant,
         # modality 2 gets full attention at bottom-right quadrant.
-        manual_attention[:, 0, :100, :] = 1.0  # top half of image to modality 0
-        manual_attention[:, 1, 100:, :100] = 1.0  # bottom-left to modality 1
-        manual_attention[:, 2, 100:, 100:] = 1.0  # bottom-right to modality 2
+       # Set attention to be deterministic
+        H, W = manual_attention.shape[2], manual_attention.shape[3]
+        
+        manual_attention[:, 0, :H//2, :] = 1.0          # top half
+        manual_attention[:, 1, H//2:, :W//2] = 1.0      # bottom-left
+        manual_attention[:, 2, H//2:, W//2:] = 1.0      # bottom-right
         
         # Normalize manually
         manual_attention_sum = manual_attention.sum(dim=1, keepdim=True) + 1e-8
