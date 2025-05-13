@@ -25,6 +25,7 @@ and Graphics, 2023.*](https://www.sciencedirect.com/science/article/pii/S0895611
     ```
 
 ### <img src="https://raw.githubusercontent.com/iampavangandhi/iampavangandhi/master/gifs/Hi.gif" width="30">Recent Updates
+- May 13, 2025 - Oral presentation at ISMRM 2025 in Honolulu, HI titled "Rescuing Incomplete MR Data: Anatomy Imputation Using Multi-Contrast Restricted Field of View Images". Updated code reflects this work.
 - August 11, 2024 - **An [interactive demo](https://colab.research.google.com/drive/1PeBuqOAGupLQ2gXWVneX1Kn31ISh4oFB?usp=share_link) for HACA3 now available.** You can explore HACA3 harmonization and imputation real time.
 
 ## 1. Introduction and motivation
