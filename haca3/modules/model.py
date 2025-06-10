@@ -660,6 +660,11 @@ class HACA3:
                     keys_tmp = [divide_into_batches(ks, num_batches)[batch_id] for ks in keys]
                     logits_tmp = [divide_into_batches(ls, num_batches)[batch_id] for ls in logits]
                     masks_tmp = [divide_into_batches(ms, num_batches)[batch_id] for ms in masks]
+                    # Now shape: list of tensors, each (B, 1, 224, 224)                    
+                    # Stack along contrast axis (last dim is num_keys = num_sources * num_patches)
+                    masks_tmp = torch.stack(masks_tmp, dim=-1)  # shape: (B, 1, 224, 224, num_keys)
+                    # Permute to match attention: (B, num_keys, H, W)
+                    masks_tmp = masks_tmp.squeeze(1).permute(0, 4, 2, 3)
                     batch_size = keys_tmp[0].shape[0]
                     query_tmp = query.view(1, self.theta_dim + self.eta_dim, 1).repeat(batch_size, 1, 1)
                     k = torch.cat(keys_tmp, dim=-1).view(batch_size, self.theta_dim + self.eta_dim, 1, len(source_images))
