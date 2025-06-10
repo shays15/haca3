@@ -17,7 +17,17 @@ from .utils import *
 from .dataset import HACA3Dataset
 from .network import UNet, ThetaEncoder, EtaEncoder, Patchifier, AttentionModule, FusionNet
 
-
+def split_into_quadrants(image):
+    B, C, H, W = image.shape
+    assert H % 2 == 0 and W % 2 == 0
+    patches = [
+        image[:, :, :H//2, :W//2],   # top-left
+        image[:, :, :H//2, W//2:],   # top-right
+        image[:, :, H//2:, :W//2],   # bottom-left
+        image[:, :, H//2:, W//2:]    # bottom-right
+    ]
+    return patches
+    
 class HACA3:
     def __init__(self, beta_dim, theta_dim, eta_dim, pretrained_haca3=None, pretrained_eta_encoder=None, gpu_id=0):
         self.beta_dim = beta_dim
@@ -593,9 +603,17 @@ class HACA3:
             else:
                 queries, thetas_target = [], []
                 for target_theta_tmp, target_eta_tmp in zip(target_theta, target_eta):
-                    thetas_target.append(target_theta_tmp.view(1, self.theta_dim, 1, 1).to(self.device))
-                    queries.append(torch.cat([target_theta_tmp.view(1, self.theta_dim, 1).to(self.device),
-                                              target_eta_tmp.view(1, self.eta_dim, 1).to(self.device)], dim=1))
+                    patches = split_into_quadrants(target_theta_tmp.view(1, 1, 224, 224).to(self.device))
+                    for patch in patches:
+                        patch_theta = self.theta_encoder(patch)
+                        thetas_target.append(patch_theta.view(1, self.theta_dim, 1, 1))
+                        queries.append(torch.cat([
+                            patch_theta.view(1, self.theta_dim, 1),
+                            target_eta_tmp.view(1, self.eta_dim, 1).to(self.device)
+                        ], dim=1))
+                    #thetas_target.append(target_theta_tmp.view(1, self.theta_dim, 1, 1).to(self.device))
+                    #queries.append(torch.cat([target_theta_tmp.view(1, self.theta_dim, 1).to(self.device),
+                                              #target_eta_tmp.view(1, self.eta_dim, 1).to(self.device)], dim=1))
 
             # === 3. SAVE ENCODED VARIABLES (IF REQUESTED) ===
             if save_intermediate and header is not None:
