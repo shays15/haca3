@@ -241,7 +241,10 @@ class AttentionModule(nn.Module):
         * modality_dropout: torch.Tensor (batch_size, num_contrasts=4)
             Indicates which contrast indexes have been dropped out. 1: if dropped out, 0: if exists.
         """
-        batch_size, feature_dim_q, num_q_patches = q.shape
+        #batch_size, feature_dim_q, num_q_patches = q.shape
+        feature_dim_q, num_q_patches = q.shape[1], q.shape[2]
+        batch_size = v.shape[0]  # Always trust v.shape[0] for batch size
+
         _, feature_dim_k, _, num_contrasts = k.shape
         num_v_patches = v.shape[2]
         assert (
