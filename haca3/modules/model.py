@@ -663,7 +663,9 @@ class HACA3:
                     batch_size = keys_tmp[0].shape[0]
                     query_tmp = query.view(1, self.theta_dim + self.eta_dim, 1).repeat(batch_size, 1, 1)
                     k = torch.cat(keys_tmp, dim=-1).view(batch_size, self.theta_dim + self.eta_dim, 1, len(source_images))
-                    v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images))
+                    #v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images))
+                    v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images) * 4)
+
                     
                     #expanded_mask = masks_tmp[0].unsqueeze(1)
                     #expanded_mask = masks_tmp.expand(-1, attention.size(1), -1, -1, -1).squeeze(2)
