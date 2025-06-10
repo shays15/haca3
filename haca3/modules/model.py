@@ -571,12 +571,18 @@ class HACA3:
                     mask = (source_image_batch > 1e-2) * 1.0
                     logit = self.beta_encoder(source_image_batch)
                     beta = self.channel_aggregation(reparameterize_logit(logit))
-                    theta_source, _ = self.theta_encoder(source_image_batch)
+                    #theta_source, _ = self.theta_encoder(source_image_batch)
+                    theta_patches = []
+                    for patch in split_into_quadrants(source_image_batch):  # patch shape: (B, 1, 112, 112)
+                        theta_patch, _ = self.theta_encoder(patch)
+                        theta_patches.append(theta_patch)
                     eta_source = self.eta_encoder(source_image_batch).view(batch_size, self.eta_dim, 1, 1)
                     mask_tmp.append(mask)
                     logit_tmp.append(logit)
                     beta_tmp.append(beta)
-                    key_tmp.append(torch.cat([theta_source, eta_source], dim=1))
+                    #key_tmp.append(torch.cat([theta_source, eta_source], dim=1))
+                    for theta_patch in theta_patches:
+                        key_tmp.append(torch.cat([theta_patch, eta_source], dim=1))
                 masks.append(torch.cat(mask_tmp, dim=0))
                 logits.append(torch.cat(logit_tmp, dim=0))
                 betas.append(torch.cat(beta_tmp, dim=0))
