@@ -665,11 +665,13 @@ class HACA3:
                     k = torch.cat(keys_tmp, dim=-1).view(batch_size, self.theta_dim + self.eta_dim, 1, len(source_images))
                     #v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images))
                     #v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images) * 4)
-                    v_tmp = torch.stack(logits_tmp, dim=-1)
+                    v_tmp = torch.stack(logits_tmp, dim=0)            # (num_keys, B, beta_dim, 224, 224)
                     print(f"[DEBUG] logits_tmp stacked shape: {v_tmp.shape}")
-                    v = v_tmp.view(batch_size, self.beta_dim, 224 * 224, -1)
+                    v_tmp = v_tmp.permute(1, 2, 3, 4, 0)              # (B, beta_dim, 224, 224, num_keys)
+                    print(f"[DEBUG] v_tmp shape: {v_tmp.shape}")
+                    v = v_tmp.view(v_tmp.shape[0], self.beta_dim, 224 * 224, -1)  # (B, beta_dim, 50176, num_keys)
+                    print(f"[DEBUG] v shape: {v.shape}")
 
-                    
                     #expanded_mask = masks_tmp[0].unsqueeze(1)
                     #expanded_mask = masks_tmp.expand(-1, attention.size(1), -1, -1, -1).squeeze(2)
 
