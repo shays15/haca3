@@ -606,6 +606,7 @@ class HACA3:
                     patches = split_into_quadrants(target_theta_tmp.view(1, 1, 224, 224).to(self.device))
                     for patch in patches:
                         patch_theta = self.theta_encoder(patch)
+                        print(f"[DEBUG] Patch {i} theta: {patch_theta.view(-1).cpu().detach().numpy()}")
                         thetas_target.append(patch_theta.view(1, self.theta_dim, 1, 1))
                         queries.append(torch.cat([
                             patch_theta.view(1, self.theta_dim, 1),
