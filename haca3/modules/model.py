@@ -665,6 +665,9 @@ class HACA3:
                     k = torch.cat(keys_tmp, dim=-1).view(batch_size, self.theta_dim + self.eta_dim, 1, len(source_images))
                     #v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images))
                     v = torch.stack(logits_tmp, dim=-1).view(batch_size, self.beta_dim, 224 * 224, len(source_images) * 4)
+                    v_tmp = torch.stack(logits_tmp, dim=-1)
+                    print(f"[DEBUG] logits_tmp stacked shape: {v_tmp.shape}")
+                    v = v_tmp.view(batch_size, self.beta_dim, 224 * 224, -1)
 
                     
                     #expanded_mask = masks_tmp[0].unsqueeze(1)
