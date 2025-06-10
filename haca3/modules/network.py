@@ -243,7 +243,6 @@ class AttentionModule(nn.Module):
         """
         #batch_size, feature_dim_q, num_q_patches = q.shape
         feature_dim_q, num_q_patches = q.shape[1], q.shape[2]
-        batch_size = v.shape[0]  # Always trust v.shape[0] for batch size
 
         _, feature_dim_k, _, num_contrasts = k.shape
         num_v_patches = v.shape[2]
@@ -252,7 +251,11 @@ class AttentionModule(nn.Module):
         ), 'Feature dimensions do not match.'
 
         # q.shape: (batch_size, num_q_patches=1, 1, feature_dim_q)
-        q = q.reshape(batch_size, feature_dim_q, num_q_patches, 1).permute(0, 2, 3, 1)
+        #q = q.reshape(batch_size, feature_dim_q, num_q_patches, 1).permute(0, 2, 3, 1)
+        # q originally: (B, D_q, N_q)
+        q = q.permute(0, 2, 1).unsqueeze(2)  # → (B, N_q, 1, D_q)
+        batch_size = q.shape[0]              # This now safely defines batch_size
+        
         # k.shape: (batch_size, num_k_patches=1, num_contrasts=4, feature_dim_k)
         k = k.permute(0, 2, 3, 1)
         # v.shape: (batch_size, num_v_patches=224*224, num_contrasts=4, v_ch=5)
@@ -260,6 +263,12 @@ class AttentionModule(nn.Module):
         q = self.q_fc(q)
         # k.shape: (batch_size, num_k_patches=1, feature_dim_k, num_contrasts=4)
         k = self.k_fc(k).permute(0, 1, 3, 2)
+       
+        # === DEBUG PRINTS ===
+        print(f"[DEBUG] q shape after fc: {q.shape}")  # (B, N_q, 1, 16)
+        print(f"[DEBUG] k shape after fc: {k.shape}")  # (B, N_k, num_contrasts, 16)
+        print(f"[DEBUG] v shape after permute: {v.shape}")  # (B, num_v_patches, num_contrasts, v_ch={self.v_ch})
+        print(f"[DEBUG] batch_size: {batch_size}")
 
         # dot_prod.shape: (batch_size, num_q_patches=1, 1, num_contrasts=4)
         dot_prod = (q @ k) * self.scale
