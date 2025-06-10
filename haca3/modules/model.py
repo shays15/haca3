@@ -574,6 +574,7 @@ class HACA3:
                     #theta_source, _ = self.theta_encoder(source_image_batch)
                     theta_patches = []
                     for patch in split_into_quadrants(source_image_batch):  # patch shape: (B, 1, 112, 112)
+                        patch = F.interpolate(patch, size=(224, 224), mode="bilinear", align_corners=False) # Resample to: (B, 1, 224, 224)
                         theta_patch, _ = self.theta_encoder(patch)
                         theta_patches.append(theta_patch)
                     eta_source = self.eta_encoder(source_image_batch).view(batch_size, self.eta_dim, 1, 1)
@@ -611,6 +612,7 @@ class HACA3:
                 for target_theta_tmp, target_eta_tmp in zip(target_theta, target_eta):
                     patches = split_into_quadrants(target_theta_tmp.view(1, 1, 224, 224).to(self.device))
                     for patch in patches:
+                        patch = F.interpolate(patch, size=(224, 224), mode="bilinear", align_corners=False) # Resample to: (B, 1, 224, 224)
                         patch_theta = self.theta_encoder(patch)
                         print(f"[DEBUG] Patch {i} theta: {patch_theta.view(-1).cpu().detach().numpy()}")
                         thetas_target.append(patch_theta.view(1, self.theta_dim, 1, 1))
