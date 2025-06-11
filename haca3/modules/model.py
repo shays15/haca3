@@ -693,7 +693,7 @@ class HACA3:
                     
                     # Repeat per-slice tensors to match per-patch query count
                     v = v.repeat_interleave(repeat_factor, dim=0)         # (224, 5, 50176, 3)
-                    k = k.repeat_interleave(repeat_factor, dim=0)         # (224, 4, 1, 3)
+                    # k = k.repeat_interleave(repeat_factor, dim=0)         # (224, 4, 1, 3)
                     masks_tmp = masks_tmp.repeat_interleave(repeat_factor, dim=0)  # (224, 3, 224, 224)
                     
                     # === Optional debug prints
