@@ -731,31 +731,31 @@ class HACA3:
 
                 # ===5. SAVE INTERMEDIATE RESULTS (IF REQUESTED)===
                 # harmonized image
-                if header is not None:
-                    if recon_orientation == "axial":
-                        img_save = np.array(rec_image.cpu().squeeze().permute(1, 2, 0).permute(1, 0, 2))
-                    elif recon_orientation == "coronal":
-                        img_save = np.array(rec_image.cpu().squeeze().permute(0, 2, 1).flip(2).permute(1, 0, 2))
-                    else:
-                        img_save = np.array(rec_image.cpu().squeeze().permute(2, 0, 1).flip(2).permute(1, 0, 2))
-                    img_save = nib.Nifti1Image((img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96]) * norm_val, None,
-                                               header)
-                    file_name = out_path.parent / f'{out_prefix}_harmonized_{recon_orientation}.nii.gz'
-                    nib.save(img_save, file_name)
+                # if header is not None:
+                #     if recon_orientation == "axial":
+                #         img_save = np.array(rec_image.cpu().squeeze().permute(1, 2, 0).permute(1, 0, 2))
+                #     elif recon_orientation == "coronal":
+                #         img_save = np.array(rec_image.cpu().squeeze().permute(0, 2, 1).flip(2).permute(1, 0, 2))
+                #     else:
+                #         img_save = np.array(rec_image.cpu().squeeze().permute(2, 0, 1).flip(2).permute(1, 0, 2))
+                #     img_save = nib.Nifti1Image((img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96]) * norm_val, None,
+                #                                header)
+                #     file_name = out_path.parent / f'{out_prefix}_harmonized_{recon_orientation}.nii.gz'
+                #     nib.save(img_save, file_name)
 
                 if save_intermediate and header is not None:
-                    # 5a. beta fusion
-                    if recon_orientation == 'axial':
-                        img_save = beta_fusion.squeeze().permute(1, 2, 0).permute(1, 0, 2).cpu().numpy()
-                        img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96], None, header)
-                        file_name = intermediate_out_dir / f'{out_prefix}_beta_fusion.nii.gz'
-                        nib.save(img_save, file_name)
-                    # 5b. logit fusion
-                    if recon_orientation == 'axial':
-                        img_save = logit_fusion.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
-                        img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96, :], None, header)
-                        file_name = intermediate_out_dir / f'{out_prefix}_logit_fusion.nii.gz'
-                        nib.save(img_save, file_name)
+                    # # 5a. beta fusion
+                    # if recon_orientation == 'axial':
+                    #     img_save = beta_fusion.squeeze().permute(1, 2, 0).permute(1, 0, 2).cpu().numpy()
+                    #     img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96], None, header)
+                    #     file_name = intermediate_out_dir / f'{out_prefix}_beta_fusion.nii.gz'
+                    #     nib.save(img_save, file_name)
+                    # # 5b. logit fusion
+                    # if recon_orientation == 'axial':
+                    #     img_save = logit_fusion.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
+                    #     img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96, :], None, header)
+                    #     file_name = intermediate_out_dir / f'{out_prefix}_logit_fusion.nii.gz'
+                    #     nib.save(img_save, file_name)
                     # 5c. attention
                     if recon_orientation == 'axial':
                         img_save = attention.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
