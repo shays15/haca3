@@ -700,8 +700,9 @@ class HACA3:
                     print(f"[DEBUG] masks_tmp repeated shape: {masks_tmp.shape}")
                     print(f"[DEBUG] query_tmp shape: {query_tmp.shape}")
 
-                    theta_target = theta_target.unsqueeze(-1).unsqueeze(-1)  # Shape: [112, D, 1, 1]
                     print(f"[DEBUG] theta_target shape: {theta_target.shape}")
+                    theta_target = theta_target.unsqueeze(-1).unsqueeze(-1)  # Shape: [112, D, 1, 1]
+                    print(f"[DEBUG] theta_target after unseq x2 shape: {theta_target.shape}")
                     theta_target = theta_target.repeat(1, 1, 224, 224)       # Shape: [112, D, 224, 224]
                     print(f"[DEBUG] theta_target after repeat shape: {theta_target.shape}")
                     theta_target = F.interpolate(theta_target, size=(224, 112), mode='bilinear', align_corners=False)
