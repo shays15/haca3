@@ -744,18 +744,18 @@ class HACA3:
                 #     nib.save(img_save, file_name)
 
                 if save_intermediate and header is not None:
-                    # # 5a. beta fusion
-                    # if recon_orientation == 'axial':
-                    #     img_save = beta_fusion.squeeze().permute(1, 2, 0).permute(1, 0, 2).cpu().numpy()
-                    #     img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96], None, header)
-                    #     file_name = intermediate_out_dir / f'{out_prefix}_beta_fusion.nii.gz'
-                    #     nib.save(img_save, file_name)
-                    # # 5b. logit fusion
-                    # if recon_orientation == 'axial':
-                    #     img_save = logit_fusion.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
-                    #     img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96, :], None, header)
-                    #     file_name = intermediate_out_dir / f'{out_prefix}_logit_fusion.nii.gz'
-                    #     nib.save(img_save, file_name)
+                    # 5a. beta fusion
+                    if recon_orientation == 'axial':
+                        img_save = beta_fusion.squeeze().permute(1, 2, 0).permute(1, 0, 2).cpu().numpy()
+                        img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96], None, header)
+                        file_name = intermediate_out_dir / f'{out_prefix}_beta_fusion.nii.gz'
+                        nib.save(img_save, file_name)
+                    # 5b. logit fusion
+                    if recon_orientation == 'axial':
+                        img_save = logit_fusion.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
+                        img_save = nib.Nifti1Image(img_save[112 - 96:112 + 96, :, 112 - 96:112 + 96, :], None, header)
+                        file_name = intermediate_out_dir / f'{out_prefix}_logit_fusion.nii.gz'
+                        nib.save(img_save, file_name)
                     # 5c. attention
                     if recon_orientation == 'axial':
                         img_save = attention.permute(2, 3, 0, 1).permute(1, 0, 2, 3).cpu().numpy()
