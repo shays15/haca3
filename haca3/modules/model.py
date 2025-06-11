@@ -701,21 +701,10 @@ class HACA3:
                     print(f"[DEBUG] query_tmp shape: {query_tmp.shape}")
 
                     print(f"[DEBUG] theta_target shape: {theta_target.shape}")
-                    theta_target = theta_target.unsqueeze(-1).unsqueeze(-1)  # Shape: [112, D, 1, 1]
-                    print(f"[DEBUG] theta_target after unseq x2 shape: {theta_target.shape}")
-                    theta_target = theta_target.repeat(1, 1, 224, 224)       # Shape: [112, D, 224, 224]
-                    print(f"[DEBUG] theta_target after repeat shape: {theta_target.shape}")
-                    theta_target = F.interpolate(theta_target, size=(224, 112), mode='bilinear', align_corners=False)
-                    print(f"[DEBUG] theta_target after interpolate shape: {theta_target.shape}")
-                    theta_target_stitched = torch.stack([
-                        theta_target[::2], theta_target[1::2]
-                    ], dim=0).transpose(0, 1).reshape(-1, theta_target.shape[1], 224, 224)  # → [56, D, 224, 224]
-                    print(f"[DEBUG] theta_target_stitched shape: {theta_target_stitched.shape}")
 
                     logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
-                    #combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
-                    combined_map = torch.cat([beta_fusion_tmp, theta_target_stitched], dim=1)
+                    combined_map = torch.cat([beta_fusion_tmp, theta_target.repeat(batch_size, 1, 224, 224)], dim=1)
                     masks_cpu = [mask.cpu().numpy() for mask in masks_tmp]
                     union_mask = np.logical_or.reduce(masks_cpu)
                     union_mask = torch.from_numpy(union_mask).to(masks_tmp[0].device)
