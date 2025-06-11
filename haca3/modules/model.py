@@ -678,7 +678,11 @@ class HACA3:
                     print(f"[DEBUG] query_tmp shape: {query_tmp.shape}")   # e.g., (B, D_q, N_q)
                     print(f"[DEBUG] k shape: {k.shape}")                   # e.g., (B, D_k, N_k, num_contrasts)
                     print(f"[DEBUG] v shape: {v.shape}")                   # e.g., (B, beta_dim, 224*224, num_contrasts)
-                    print(f"[DEBUG] masks_tmp shape: {masks_tmp.shape}")   # e.g., (B, num_keys, 224, 224)
+                    if isinstance(masks_tmp, list):
+                        print(f"[DEBUG] masks_tmp[0] shape: {masks_tmp[0].shape}, len={len(masks_tmp)}")
+                        masks_tmp = torch.stack(masks_tmp, dim=1)  # (B, num_keys, 1, 224, 224)
+                        masks_tmp = masks_tmp.squeeze(2)           # (B, num_keys, 224, 224)
+                    print(f"[DEBUG] masks_tmp shape: {masks_tmp.shape}")
 
                     logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
