@@ -722,9 +722,12 @@ class HACA3:
                     attention.append(attention_tmp)
 
                 rec_image = torch.cat(rec_image, dim=0)
+                print(f"[DEBUG] rec_image after cat shape = {rec_image.shape}")
                 beta_fusion = torch.cat(beta_fusion, dim=0)
                 logit_fusion = torch.cat(logit_fusion, dim=0)
                 attention = torch.cat(attention, dim=0)
+                print(f"[DEBUG] attention after cat shape = {attention.shape}")
+
 
                 # ===5. SAVE INTERMEDIATE RESULTS (IF REQUESTED)===
                 # harmonized image
