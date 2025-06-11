@@ -329,5 +329,8 @@ class AttentionModule(nn.Module):
         v = v.view(batch_size, image_dim, image_dim, self.v_ch).permute(0, 3, 1, 2)
         attention = normalized_attention_map.view(batch_size, image_dim, image_dim, num_contrasts).permute(0, 3, 1, 2)
 
+        print(f"DEBUG: v shape = {v.shape}")
+        print(f"DEBUG: attention shape = {attention.shape}")
+
         return v, attention
         
