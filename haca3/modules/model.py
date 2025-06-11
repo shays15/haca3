@@ -17,14 +17,12 @@ from .utils import *
 from .dataset import HACA3Dataset
 from .network import UNet, ThetaEncoder, EtaEncoder, Patchifier, AttentionModule, FusionNet
 
-def split_into_quadrants(image):
+def split_into_patches(image):
     B, C, H, W = image.shape
     assert H % 2 == 0 and W % 2 == 0
     patches = [
-        image[:, :, :H//2, :W//2],   # top-left
-        image[:, :, :H//2, W//2:],   # top-right
-        image[:, :, H//2:, :W//2],   # bottom-left
-        image[:, :, H//2:, W//2:]    # bottom-right
+        image[:, :, :, :W//2],   # 1
+        image[:, :, :, W//2:]    # 2
     ]
     return patches
     
@@ -573,7 +571,7 @@ class HACA3:
                     beta = self.channel_aggregation(reparameterize_logit(logit))
                     #theta_source, _ = self.theta_encoder(source_image_batch)
                     theta_patches = []
-                    for patch in split_into_quadrants(source_image_batch):  # patch shape: (B, 1, 112, 112)
+                    for patch in split_into_patches(source_image_batch):  # patch shape: (B, 1, 112, 112)
                         patch = F.interpolate(patch, size=(224, 224), mode="bilinear", align_corners=False) # Resample to: (B, 1, 224, 224)
                         theta_patch, _ = self.theta_encoder(patch)
                         theta_patches.append(theta_patch)
@@ -610,7 +608,7 @@ class HACA3:
             else:
                 queries, thetas_target = [], []
                 for target_theta_tmp, target_eta_tmp in zip(target_theta, target_eta):
-                    patches = split_into_quadrants(target_theta_tmp.view(1, 1, 224, 224).to(self.device))
+                    patches = split_into_patches(target_theta_tmp.view(1, 1, 224, 224).to(self.device))
                     for patch in patches:
                         patch = F.interpolate(patch, size=(224, 224), mode="bilinear", align_corners=False) # Resample to: (B, 1, 224, 224)
                         patch_theta = self.theta_encoder(patch)
