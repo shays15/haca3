@@ -332,5 +332,24 @@ class AttentionModule(nn.Module):
         print(f"DEBUG: v shape = {v.shape}")
         print(f"DEBUG: attention shape = {attention.shape}")
 
-        return v, attention
+        # === Stitching logic for 2 patches per original image ===
+        if batch_size % 2 != 0:
+            raise ValueError(f"Expected an even number of patches for stitching, but got batch_size={batch_size}")
+        
+        # Separate into left and right halves
+        v_left = v[0::2]     # [B/2, C, H, W]
+        v_right = v[1::2]    # [B/2, C, H, W]
+        attention_left = attention[0::2]
+        attention_right = attention[1::2]
+        
+        # Stitch back together along width (dim=-1)
+        v_stitched = torch.cat([v_left, v_right], dim=-1)  # [B/2, C, H, W*2]
+        attention_stitched = torch.cat([attention_left, attention_right], dim=-1)
+        
+        print(f"DEBUG: v_stitched shape = {v_stitched.shape}")
+        print(f"DEBUG: attention_stitched shape = {attention_stitched.shape}")
+        # Final output
+        return v_stitched, attention_stitched
+
+        #return v, attention
         
