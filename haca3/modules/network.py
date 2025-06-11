@@ -332,6 +332,15 @@ class AttentionModule(nn.Module):
         print(f"DEBUG: v shape = {v.shape}")
         print(f"DEBUG: attention shape = {attention.shape}")
 
+        # Example for v and attention
+        v = F.interpolate(v, size=(224, 112), mode='bilinear', align_corners=False)
+        attention = F.interpolate(attention, size=(224, 112), mode='bilinear', align_corners=False)
+
+        print(f"DEBUG: v after downsample shape = {v.shape}")
+        print(f"DEBUG: attention after downsample shape = {attention.shape}")
+        # Now stitch back
+        v_stitched = torch.cat([v[::2], v[1::2]], dim=-1)  # width becomes 224
+        attention_stitched = torch.cat([attention[::2], attention[1::2]], dim=-1)
         # === Stitching logic for 2 patches per original image ===
         if batch_size % 2 != 0:
             raise ValueError(f"Expected an even number of patches for stitching, but got batch_size={batch_size}")
