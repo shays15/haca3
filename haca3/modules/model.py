@@ -683,6 +683,24 @@ class HACA3:
                         masks_tmp = torch.stack(masks_tmp, dim=1)  # (B, num_keys, 1, 224, 224)
                         masks_tmp = masks_tmp.squeeze(2)           # (B, num_keys, 224, 224)
                     print(f"[DEBUG] masks_tmp shape: {masks_tmp.shape}")
+                    
+                    # ==== Repeat slice-level v, k, mask to match patch-based query_tmp ====
+                    batch_size_q = query_tmp.shape[0]   # e.g., 224
+                    batch_size_v = v.shape[0]           # e.g., 56
+                    
+                    assert batch_size_q % batch_size_v == 0, "query and value batch sizes must align as multiple"
+                    repeat_factor = batch_size_q // batch_size_v  # e.g., 4
+                    
+                    # Repeat per-slice tensors to match per-patch query count
+                    v = v.repeat_interleave(repeat_factor, dim=0)         # (224, 5, 50176, 3)
+                    k = k.repeat_interleave(repeat_factor, dim=0)         # (224, 4, 1, 3)
+                    masks_tmp = masks_tmp.repeat_interleave(repeat_factor, dim=0)  # (224, 3, 224, 224)
+                    
+                    # === Optional debug prints
+                    print(f"[DEBUG] v repeated shape: {v.shape}")
+                    print(f"[DEBUG] k repeated shape: {k.shape}")
+                    print(f"[DEBUG] masks_tmp repeated shape: {masks_tmp.shape}")
+                    print(f"[DEBUG] query_tmp shape: {query_tmp.shape}")
 
                     logit_fusion_tmp, attention_tmp = self.attention_module(query_tmp, k, v, masks_tmp, None, 5.0)
                     beta_fusion_tmp = self.channel_aggregation(reparameterize_logit(logit_fusion_tmp))
