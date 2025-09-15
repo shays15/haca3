@@ -1,3 +1,8 @@
+### <img src="https://raw.githubusercontent.com/iampavangandhi/iampavangandhi/master/gifs/Hi.gif" width="30">Recent Updates
+- Sept 15, 2025 - Poster presentation at ANA 2025 in Baltimore, MD titled "Improving MR Image Harmonization for Clinical and Research Applications in Multiple Sclerosis".
+- May 13, 2025 - Oral presentation at ISMRM 2025 in Honolulu, HI titled "Rescuing Incomplete MR Data: Anatomy Imputation Using Multi-Contrast Restricted Field of View Images". Updated code reflects this work.
+- August 11, 2024 - **An [interactive demo](https://colab.research.google.com/drive/1PeBuqOAGupLQ2gXWVneX1Kn31ISh4oFB?usp=share_link) for HACA3 now available.** You can explore HACA3 harmonization and imputation real time.
+
 ![HACA3 features](figures/GA.png)
 
 # HACA3: A unified approach for multi-site MR image harmonization | [Paper](https://www.sciencedirect.com/science/article/pii/S0895611123001039)
@@ -23,10 +28,6 @@ and Graphics, 2023.*](https://www.sciencedirect.com/science/article/pii/S0895611
               Susan M. Resnick and Jerry L. Prince and Aaron Carass}
     }
     ```
-
-### <img src="https://raw.githubusercontent.com/iampavangandhi/iampavangandhi/master/gifs/Hi.gif" width="30">Recent Updates
-- May 13, 2025 - Oral presentation at ISMRM 2025 in Honolulu, HI titled "Rescuing Incomplete MR Data: Anatomy Imputation Using Multi-Contrast Restricted Field of View Images". Updated code reflects this work.
-- August 11, 2024 - **An [interactive demo](https://colab.research.google.com/drive/1PeBuqOAGupLQ2gXWVneX1Kn31ISh4oFB?usp=share_link) for HACA3 now available.** You can explore HACA3 harmonization and imputation real time.
 
 ## 1. Introduction and motivation
 ### 1.1 The double-edged sword of MRI: flexibility and variability
