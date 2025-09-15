@@ -3,6 +3,7 @@
 - May 13, 2025 - Oral presentation at ISMRM 2025 in Honolulu, HI titled "Rescuing Incomplete MR Data: Anatomy Imputation Using Multi-Contrast Restricted Field of View Images". Updated code reflects this work.
 - August 11, 2024 - **An [interactive demo](https://colab.research.google.com/drive/1PeBuqOAGupLQ2gXWVneX1Kn31ISh4oFB?usp=share_link) for HACA3 now available.** You can explore HACA3 harmonization and imputation real time.
 
+![HACA3 features](figures/methods.png)
 ![HACA3 features](figures/GA.png)
 
 # HACA3: A unified approach for multi-site MR image harmonization | [Paper](https://www.sciencedirect.com/science/article/pii/S0895611123001039)
