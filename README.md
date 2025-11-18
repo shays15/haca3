@@ -82,7 +82,7 @@ Singularity image of HACA3 model can be directly downloaded [**here**](https://i
 ### 3.2 Option 2: Install from source using `pip`
 1. Clone the repository:
     ```bash
-    git clone https://github.com/lianruizuo/haca3.git 
+    git clone https://github.com/shays15/haca3.git 
     ```
 2. Navigate to the directory:
     ```bash
