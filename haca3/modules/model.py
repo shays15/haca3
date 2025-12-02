@@ -610,7 +610,7 @@ class HACA3:
                     # 3b. beta images
                     beta = torch.stack(betas, dim=-1)
                     if len(beta.shape) > 4:
-                        beta = beta.squeeze()
+                        beta = beta.squeeze(-1)
                     beta = beta.permute(1, 2, 0, 3).permute(1, 0, 2, 3).cpu().numpy()
                     img_save = nib.Nifti1Image(beta[112 - 96:112 + 96, :, 112 - 96:112 + 96, :], None, header)
                     file_name = intermediate_out_dir / f'{prefix}_source_betas.nii.gz'
