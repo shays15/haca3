@@ -21,14 +21,15 @@ contrast_names = ['T1PRE', 'T2', 'PD', 'FLAIR']
 def get_tensor_from_fpath(fpath, normalization_method):
     if os.path.exists(fpath):
         image = np.squeeze(nib.load(fpath).get_fdata().astype(np.float32)).transpose([1, 0])
-
         if normalization_method == 'wm':
             image = image / 2.0
-        else:
-            p99 = np.percentile(image.flatten(), 95)
-            image = image / (p99 + 1e-5)
-            image = np.clip(image, a_min=0.0, a_max=5.0)
-
+        elif normalization_method == '01':
+            p95 = np.percentile(image, 95)  # np.percentile flattens by default
+            image = image / (p95 + 1e-5)
+            image = np.clip(image, 0.0, 5.0)
+        else: 
+            image = image
+            
         image = np.array(default_transform(image))
         image = ToTensor()(image)
     else:
