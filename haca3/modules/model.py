@@ -609,11 +609,12 @@ class HACA3:
                         )
                     # 3b. beta images
                     beta = torch.stack(betas, dim=-1)
+                    print(beta.shape)
                     if len(beta.shape) > 4:
-                        beta = beta.squeeze(-1)
+                        beta = beta.squeeze(1)
                     beta = beta.permute(1, 2, 0, 3).permute(1, 0, 2, 3).cpu().numpy()
                     img_save = nib.Nifti1Image(beta[112 - 96:112 + 96, :, 112 - 96:112 + 96, :], None, header)
-                    file_name = intermediate_out_dir / f'{prefix}_source_betas.nii.gz'
+                    file_name = intermediate_out_dir / f'{prefix}_source_betas_{recon_orientation}.nii.gz'
                     nib.save(img_save, file_name)
                     # 3c. theta/eta values
                     with open(intermediate_out_dir / f'{prefix}_sources.txt', 'w') as fp:
@@ -623,6 +624,24 @@ class HACA3:
                             for j, slice_key in enumerate(img_key):
                                 fp.write(','.join([f'source{i}', f'slice{j:03d}'] +
                                                   ['%.6f' % val for val in slice_key]) + '\n')
+                elif recon_orientation == 'coronal':
+                    # 3b. beta images
+                    beta = torch.stack(betas, dim=-1)
+                    if len(beta.shape) > 4:
+                        beta = beta.squeeze(1)
+                    beta = beta.permute(1, 2, 0, 3).permute(1, 0, 2, 3).cpu().numpy()
+                    img_save = nib.Nifti1Image(beta[112 - 96:112 + 96, :, 112 - 96:112 + 96, :], None, header)
+                    file_name = intermediate_out_dir / f'{prefix}_source_betas_{recon_orientation}.nii.gz'
+                    nib.save(img_save, file_name)
+                elif recon_orientation == 'sagittal':
+                    # 3b. beta images
+                    beta = torch.stack(betas, dim=-1)
+                    if len(beta.shape) > 4:
+                        beta = beta.squeeze(1)
+                    beta = beta.permute(1, 2, 0, 3).permute(1, 0, 2, 3).cpu().numpy()
+                    img_save = nib.Nifti1Image(beta[:, :, 112 - 96:112 + 96, :], None, header)
+                    file_name = intermediate_out_dir / f'{prefix}_source_betas_{recon_orientation}.nii.gz'
+                    nib.save(img_save, file_name)
 
             # ===4. DECODING===
             for tid, (theta_target, query, norm_val) in enumerate(zip(thetas_target, queries, norm_vals)):
