@@ -7,8 +7,9 @@ from torchvision.transforms import Compose, Pad, CenterCrop, ToTensor, ToPILImag
 import torchio as tio
 import nibabel as nib
 
-#default_transform = Compose([ToPILImage(), Pad(40), CenterCrop([224, 224])])
+# default_transform = Compose([ToPILImage(), Pad(40), CenterCrop([224, 224])])
 default_transform = Compose([Pad(40), CenterCrop([224, 224])])
+
 transform_dict = {
     tio.RandomMotion(degrees=(15, 30), translation=(10, 20)): 0.25,
     tio.RandomNoise(std=(0.01, 0.1)): 0.25,
